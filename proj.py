@@ -6,18 +6,19 @@ import cv2
 def load_data(path):
 	train = []
 	labels = []
+
 	for dirs in sorted(os.listdir(path)):
 		for file_name in os.listdir(os.path.join(path, dirs)):
 			img_path = os.path.join(path, dirs, file_name)
 			train.append(cv2.imread(img_path, cv2.IMREAD_UNCHANGED))
 			labels.append(dirs)
-			# print(dirs)
-			# print(file_name)
+	
+	train = np.array(train)
+	labels = np.array(labels)
 	return train, labels
 
 def teste(data, labels):
-	# print(train_data[0].shape)
-	# print(len(data), len(labels))
+	print(len(data), len(labels))
 	for i in range(10):
 		cv2.imshow("teste", data[i])
 		print(labels[i])
@@ -29,19 +30,12 @@ def split_dataset(data, labels, train_per_val):
 	# print(permutation)
 	train_size = int(data_size * train_per_val / 100)
 	validation_size = data_size - train_size
-	# print(train_size, validation_size)
-	train_data = []
-	train_labels = []
-	validation_data = []
-	validation_labels = []
-	for i in range(data_size):
-		ind = permutation_index[i]
-		if (i < train_size):
-			train_data.append(data[ind])
-			train_labels.append(labels[ind])
-		else:
-			validation_data.append(data[ind])
-			validation_labels.append(labels[ind])
+	print(train_size, validation_size)
+	
+	train_data = data[permutation_index[0:train_size]]
+	train_labels = labels[permutation_index[0:train_size]]
+	validation_data = data[permutation_index[train_size:data_size]]
+	validation_labels = labels[permutation_index[train_size:data_size]]
 	return train_data, train_labels, validation_data, validation_labels
 
 def main():
