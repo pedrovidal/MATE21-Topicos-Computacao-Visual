@@ -113,7 +113,7 @@ def train(train_data, train_labels, validation_data, validation_labels):
 	w = initW(num_pixels)
 	b = initB()
 
-	batch_size = 5
+	batch_size = 100
 	num_steps = train_size / batch_size
 	learning_rate = 5e-3
 	
