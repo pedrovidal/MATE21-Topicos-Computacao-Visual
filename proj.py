@@ -68,7 +68,7 @@ def gradient_descent(w0, b0, batch_inputs, batch_labels, learning_rate):
 	loss = 0
 	for x, y in zip(batch_inputs, batch_labels):
 		# derivada = (2.0 / batch_size) * (w0[0] * x_i0 + ... + w0[M-1] * x_iM-1 + b0 - y_i)
-		# derivada = (2.0 / batch_size) * pre_calc
+		# derivada = (2.0 / batch_size) * y_
 		y_ = np.dot(w0, x) + b0 - y
 		loss += np.sum((y - y_)**2)
 
@@ -76,14 +76,11 @@ def gradient_descent(w0, b0, batch_inputs, batch_labels, learning_rate):
 
 		grad_w += 2.0 * x * y_
 
-		# grad_b += (2.0 / batch_size) * pre_calc
-		# for j in range(num_pixels):
-		# 	x_ij = batch_inputs[i, j]
-		# 	grad_w[j] += (2.0 / batch_size) * x_ij * pre_calc
-
 	loss /= batch_size
 	grad_b /= batch_size
 	grad_w /= batch_size
+
+	print("loss =", loss)
 
 	b1 = b0 - (learning_rate * grad_b)
 	w1 = w0 - (learning_rate * grad_w)
@@ -113,14 +110,11 @@ def train(train_data, train_labels, validation_data, validation_labels):
 	w = initW(num_pixels)
 	b = initB()
 
-	batch_size = 100
+	batch_size = 300
 	num_steps = train_size / batch_size
 	learning_rate = 5e-3
-	
-	ini = 0
-	fim = batch_size - 1
 
-	for x in range(10):
+	for x in range(20):
 		print("Epoca", x)
 		ini = 0
 		fim = batch_size - 1
