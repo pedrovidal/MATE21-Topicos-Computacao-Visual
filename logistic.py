@@ -86,20 +86,20 @@ def gradient_descent(W, b, batch_inputs, batch_labels, learning_rate):
 			z = np.dot(W[i], x) + b[i]			
 			y_[i] = sigmoid(z)
 		
-		loss += np.sum((y - y_)**2)
+			loss += 1 / 2 * np.sum((y_[i] - y[i])**2)
 
 	print(y_)
 
-	loss /= batch_size
+	# loss /= batch_size
 	grad_b /= batch_size
 	grad_w /= batch_size
 
 	print("loss =", loss)
 
-	b1 = b0 - (learning_rate * grad_b)
-	w1 = w0 - (learning_rate * grad_w)
+	b = b - (learning_rate * grad_b)
+	W = W - (learning_rate * grad_w)
 
-	return b1, w1
+	return b, W
 
 def validation(w, b, validation_data, validation_labels):
 	ac = 0.0
