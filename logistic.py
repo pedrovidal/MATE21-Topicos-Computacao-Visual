@@ -14,10 +14,10 @@ def debug(data, labels):
 			cv2.waitKey(0)
 
 def initW(data_size):
-	return np.zeros(data_size)
+	return np.random.uniform(-0.01, 0.01, data_size)
 
 def initB():
-	return 0
+	return np.random.random()
 	
 def load_data(path, num_classes):
 	data = []
@@ -31,8 +31,8 @@ def load_data(path, num_classes):
 			one_hot[int(dirs)] = 1			
 			labels.append(one_hot)
 	
-	data = np.array(data)
-	data /= 255
+	data = np.array(data, dtype=np.float)
+	data /= 255.0
 	labels = np.array(labels)
 	return data, labels
 
@@ -57,11 +57,12 @@ def split_dataset(data, labels, train_percentage):
 	return train_data, train_labels, validation_data, validation_labels
 
 def sigmoid(x):
+	return 1.0 / (1.0 + np.exp(-x))
 	if x >= 0:
-		return 1 / (1 + np.exp(-x))
+		return 1.0 / (1.0 + np.exp(-x))
 	else:
 		exp = np.exp(x)
-		return exp / (1 + exp)
+		return exp / (1.0 + exp)
 
 def gradient_descent(W, b, batch_inputs, batch_labels, learning_rate):
 	# batch_size = numero de imagens
@@ -74,39 +75,69 @@ def gradient_descent(W, b, batch_inputs, batch_labels, learning_rate):
 
 	# print(batch_size, num_pixels, num_classes, len(W), len(b))
 
-	grad_b = 0
-	grad_w = np.zeros(num_pixels)
+	grad_W = np.zeros((num_classes, num_pixels))
+	grad_b = np.zeros(num_classes)
 
 	loss = 0
 	y_ = np.empty(num_classes)
 	for x, y in zip(batch_inputs, batch_labels):
-		# derivada = (2.0 / batch_size) * (w0[0] * x_i0 + ... + w0[M-1] * x_iM-1 + b0 - y_i)
-		# derivada = (2.0 / batch_size) * y_
 		for i in range(num_classes):
-			z = np.dot(W[i], x) + b[i]			
+			z = np.dot(W[i], x) + b[i]		
 			y_[i] = sigmoid(z)
+
+			# print(y_[i])
+
+			# print(- learning_rate * (y_[i] - y[i]) * y_[i] * (1.0 - y_[i]), x)
+
+			grad_W[i] += (y_[i] - y[i]) * y_[i] * (1.0 - y_[i]) * x
+			grad_b[i] += (y_[i] - y[i]) * y_[i] * (1.0 - y_[i])
 		
-			loss += 1 / 2 * np.sum((y_[i] - y[i])**2)
+		loss += 1.0 / 2.0 * (np.sum((y_ - y)**2))
+		
+		# print(y_)
 
-	print(y_)
+		prediction = np.argmax(y_)
+		label = np.argmax(y)
 
-	# loss /= batch_size
-	grad_b /= batch_size
-	grad_w /= batch_size
+		# print(prediction, label)
 
-	print("loss =", loss)
 
-	b = b - (learning_rate * grad_b)
-	W = W - (learning_rate * grad_w)
+	# print(y_)
 
-	return b, W
+	loss /= batch_size
+	# print("loss =", loss)
 
-def validation(w, b, validation_data, validation_labels):
+	for i in range(num_classes):
+		grad_b[i] /= batch_size
+		grad_W[i] /= batch_size
+
+
+		b[i] = b[i] - (learning_rate * grad_b[i])
+		W[i] = W[i] - (learning_rate * grad_W[i])
+
+	# print(W)
+
+	return b, W, loss
+
+def validation(W, b, validation_data, validation_labels):
 	ac = 0.0
 	validation_size = len(validation_data)
 	for i in range(validation_size):
-		prediction = np.dot(validation_data[i], w) + b
-		if int(prediction + 0.5) == validation_labels[i]:
+		best = 0
+		label_prediction = 0
+		prediction = np.empty(10)
+		for j in range(10):
+			# print(W[j], b[j])
+			prediction[j] = np.dot(W[j], validation_data[i]) + b[j]
+		ind = np.argmax(prediction)
+		if (prediction[ind] > best):
+			best = prediction[ind]
+			label_prediction = ind
+		# print(ind)
+
+		# print("Validation ", label_prediction, np.argmax(validation_labels[i]))
+
+		if label_prediction == np.argmax(validation_labels[i]):
 			ac += 1
 	return ac / validation_size
 
@@ -117,39 +148,50 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 	
 	train_size = len(train_data)
 	validation_size = len(validation_data)
-	print(np.shape(train_data))
+	# print(np.shape(train_data))
 	
 	num_pixels = train_data[0].shape[0]
 
-	w = np.empty((num_classes, num_pixels))
+	W = np.empty((num_classes, num_pixels))
 	b = np.empty(num_classes)
 
 	for i in range(num_classes):
-		w[i] = initW(num_pixels)
+		W[i] = initW(num_pixels)
 		b[i] = initB()
 
-	batch_size = 300
+	batch_size = 200
 	num_steps = train_size / batch_size
-	learning_rate = 5e-3
+	learning_rate = 6e-1
 
-	for x in range(20):
+	best = 0
+
+	for x in range(500):
+		# if x % 100 == 0:
+		# 	learning_rate = learning_rate - 0.05
 		print("Epoca", x)
 		ini = 0
 		fim = batch_size - 1
+		best_now = 0
 		for i in range(num_steps):
-			print("Step", i)
+			# print("Step", i)
 			batch_inputs = np.array(train_data[ini:fim])
 			batch_labels = np.array(train_labels[ini:fim])
 			
-			#b, w = gradient_descent(w, b, batch_inputs, batch_labels, learning_rate)
-			gradient_descent(w, b, batch_inputs, batch_labels, learning_rate)
-
+			b, W, loss = gradient_descent(W, b, batch_inputs, batch_labels, learning_rate)
 
 			ini += batch_size
 			fim += batch_size
 
-			# ac = validation(w, b, validation_data, validation_labels)
-			# print(ac)
+			ac = validation(W, b, validation_data, validation_labels)
+			
+			best_now = max(ac, best_now)
+
+			# print("ac = ", ac)
+
+		best = max(best, best_now)
+		print("best = ", best)
+		print("best now = ", best_now)
+		# print("lr = ", learning_rate)
 
 def main():
 	need_shuffle = True
@@ -161,13 +203,11 @@ def main():
 	
 	if need_shuffle:
 		data, labels = shuffle(data, labels)
+
 	if need_split:
 		train_percentage = 80
 		train_data, train_labels, \
 			validation_data, validation_labels = split_dataset(data, labels, train_percentage)
-
-		# debug(train_data, train_labels)
-		# debug(validation_data, validation_labels)
 	
 	else:
 		train_data = data
