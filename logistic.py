@@ -3,6 +3,7 @@ import os
 import sys
 import numpy as np
 import cv2
+import pickle
 
 def debug(data, labels):
 	print(len(data), len(labels))
@@ -159,15 +160,29 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 		W[i] = initW(num_pixels)
 		b[i] = initB()
 
-	batch_size = 200
+	batch_size = 50
 	num_steps = train_size / batch_size
-	learning_rate = 6e-1
+	learning_rate = 0.5
 
-	best = 0
+	infile = open('ac', 'r')
+	best = pickle.load(infile)
+	infile.close()
 
-	for x in range(500):
-		# if x % 100 == 0:
-		# 	learning_rate = learning_rate - 0.05
+	print("best =", best)
+	
+	infile = open('weights', 'r')
+	best_W = pickle.load(infile)
+	infile.close()
+
+	infile = open('bias', 'r')
+	best_b = pickle.load(infile)
+	infile.close()
+
+	# print("Validation =", validation(best_W, best_b, validation_data, validation_labels))
+
+	for x in range(100):
+		# if x % 100 == 0 and x > 0:
+		# 	learning_rate = learning_rate - 1e-1
 		print("Epoca", x)
 		ini = 0
 		fim = batch_size - 1
@@ -183,20 +198,34 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 			fim += batch_size
 
 			ac = validation(W, b, validation_data, validation_labels)
-			
+
+			if ac > best:
+				print("ac = ", ac)
+				best = ac
+				outfile = open('ac', 'w')
+				pickle.dump(ac, outfile)
+				outfile.close()
+
+				best_W = W
+				outfile = open('weights', 'w')
+				pickle.dump(W, outfile)
+				outfile.close()
+
+				best_b = b
+				outfile = open('bias', 'w')
+				pickle.dump(b, outfile)
+				outfile.close()
+
 			best_now = max(ac, best_now)
-
-			# print("ac = ", ac)
-
-		best = max(best, best_now)
-		print("best = ", best)
+			
+		# print("best = ", best)
 		print("best now = ", best_now)
 		# print("lr = ", learning_rate)
 
 def main():
 	need_shuffle = True
 	need_split = True
-	
+
 	num_classes = 10
 
 	data, labels = load_data('./data_part1/train', num_classes)	

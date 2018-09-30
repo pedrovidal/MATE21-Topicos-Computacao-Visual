@@ -142,8 +142,8 @@ def main():
 		train_data, train_labels, \
 			validation_data, validation_labels = split_dataset(data, labels, train_percentage)
 
-		debug(train_data, train_labels)
-		debug(validation_data, validation_labels)
+		# debug(train_data, train_labels)
+		# debug(validation_data, validation_labels)
 	
 	else:
 		train_data = data
