@@ -160,7 +160,7 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 		W[i] = initW(num_pixels)
 		b[i] = initB()
 
-	batch_size = 50
+	batch_size = 40
 	num_steps = train_size / batch_size
 	learning_rate = 0.5
 
@@ -192,6 +192,8 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 			batch_inputs = np.array(train_data[ini:fim])
 			batch_labels = np.array(train_labels[ini:fim])
 			
+			# batch_inputs, batch_labels = shuffle(batch_inputs, batch_labels)
+
 			b, W, loss = gradient_descent(W, b, batch_inputs, batch_labels, learning_rate)
 
 			ini += batch_size
@@ -199,7 +201,7 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 
 			ac = validation(W, b, validation_data, validation_labels)
 
-			if ac > best:
+			if ac >= best:
 				print("ac = ", ac)
 				best = ac
 				outfile = open('ac', 'w')
@@ -214,6 +216,14 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 				best_b = b
 				outfile = open('bias', 'w')
 				pickle.dump(b, outfile)
+				outfile.close()
+
+				outfile = open('learning_rate', 'w')
+				pickle.dump(learning_rate, outfile)
+				outfile.close()
+
+				outfile = open('batch_size', 'w')
+				pickle.dump(batch_size, outfile)
 				outfile.close()
 
 			best_now = max(ac, best_now)
