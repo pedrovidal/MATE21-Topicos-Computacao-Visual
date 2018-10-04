@@ -154,7 +154,7 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 		W[i] = initW(num_pixels)
 		b[i] = initB()
 
-	batch_size = 40
+	batch_size = 50
 	num_steps = train_size / batch_size
 	learning_rate = 0.5
 
