@@ -9,7 +9,7 @@ def debug(data, labels):
 	print(len(data), len(labels))
 	if len(data):
 		for i in range(10):
-			data *= 255
+			# data *= 255
 			cv2.imshow("debug", data[i])
 			print(labels[i])
 			cv2.waitKey(0)
@@ -19,7 +19,7 @@ def initW(data_size):
 
 def initB():
 	return np.random.random()
-	
+
 def load_data(path, num_classes):
 	data = []
 	labels = []
@@ -29,9 +29,9 @@ def load_data(path, num_classes):
 			img_path = os.path.join(path, dirs, file_name)
 			data.append(cv2.imread(img_path, cv2.IMREAD_UNCHANGED))
 			one_hot = np.zeros(num_classes)
-			one_hot[int(dirs)] = 1			
+			one_hot[int(dirs)] = 1
 			labels.append(one_hot)
-	
+
 	data = np.array(data, dtype=np.float)
 	data /= 255.0
 	labels = np.array(labels)
@@ -43,7 +43,7 @@ def shuffle(data, labels):
 	shuffled_data = data[permutation_index]
 	shuffled_labels = labels[permutation_index]
 	return shuffled_data, shuffled_labels
-	
+
 def split_dataset(data, labels, train_percentage):
 	data_size = len(data)
 
@@ -86,23 +86,23 @@ def gradient_descent(W0, b0, W1, b1, batch_inputs, batch_labels, learning_rate):
 
 	# lossH = 0
 	lossO = 0
-	
+
 	hidden = np.empty(num_nodes)
 	deltaJ = np.empty(num_nodes)
 	deltaK = np.empty(num_classes)
 
 	y_ = np.empty(num_classes)
-	
+
 	for x, y in zip(batch_inputs, batch_labels):
 		for j in range(num_nodes):
 			z = np.dot(W0[j], x) + b0[j]
 			hidden[j] = sigmoid(z) 
 
 		for k in range(num_classes):
-			z = np.dot(W1[k], hidden) + b1[k]		
+			z = np.dot(W1[k], hidden) + b1[k]
 			y_[k] = sigmoid(z)
 
-			deltaK[k] = (y_[k] - y[k]) * y_[k] * (1.0 - y_[k]) 
+			deltaK[k] = (y_[k] - y[k]) * y_[k] * (1.0 - y_[k])
 
 			grad_W1[k] += deltaK[k] * hidden
 			grad_b1[k] += deltaK[k]
@@ -110,10 +110,10 @@ def gradient_descent(W0, b0, W1, b1, batch_inputs, batch_labels, learning_rate):
 		lossO += 1.0 / 2.0 * (np.sum((y_ - y)**2))
 		
 		for j in range(num_nodes):
-			# soma = 0
-			# for k in range(num_classes):
-			# 	soma += W0[j][k] * deltaK[k]
-			deltaJ[j] = hidden[j] * (1 - hidden[j]) * np.sum(W0[j] * deltaK[k])
+			soma = 0
+			for k in range(num_classes):
+				soma += W0[j][k] * deltaK[k]
+			deltaJ[j] = hidden[j] * (1 - hidden[j]) * soma
 
 			grad_W0[j] += deltaJ[j] * x
 			grad_b0[j] += deltaJ[j]
@@ -157,7 +157,7 @@ def validation(W0, b0, W1, b1, validation_data, validation_labels):
 			hidden[j] = sigmoid(z)
 
 		for k in range(num_classes):
-			z = np.dot(W1[k], hidden) + b1[k]		
+			z = np.dot(W1[k], hidden) + b1[k]
 			prediction[k] = sigmoid(z)
 
 		label_prediction = np.argmax(prediction)
@@ -172,11 +172,11 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 	# transforma imagem em vetor de pixels
 	train_data = train_data.reshape(np.shape(train_data)[0], -1)
 	validation_data = validation_data.reshape(np.shape(validation_data)[0], -1)
-	
+
 	train_size = len(train_data)
 	validation_size = len(validation_data)
 	# print(np.shape(train_data))
-	
+
 	num_pixels = train_data[0].shape[0]
 
 	W0 = np.empty((num_nodes, num_pixels))
@@ -193,9 +193,9 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 		W1[i] = initW(num_nodes)
 		b1[i] = initB()
 
-	batch_size = 40
+	batch_size = 50
 	num_steps = train_size / batch_size
-	learning_rate = 0.1
+	learning_rate = 0.5
 
 	infile = open('./mlp/ac', 'r')
 	best = pickle.load(infile)
@@ -282,7 +282,7 @@ def main():
 	num_classes = 10
 	num_nodes = 100 # numero de nos da camada hidden
 
-	data, labels = load_data('./data_part1/train', num_classes)	
+	data, labels = load_data('./data_part1/train', num_classes)
 	
 	if need_shuffle:
 		data, labels = shuffle(data, labels)
@@ -291,7 +291,7 @@ def main():
 		train_percentage = 80
 		train_data, train_labels, \
 			validation_data, validation_labels = split_dataset(data, labels, train_percentage)
-	
+
 	else:
 		train_data = data
 		train_labels = labels
