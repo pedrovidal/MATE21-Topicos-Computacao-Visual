@@ -124,18 +124,12 @@ def validation(W, b, validation_data, validation_labels):
 	ac = 0.0
 	validation_size = len(validation_data)
 	for i in range(validation_size):
-		best = 0
-		label_prediction = 0
 		prediction = np.empty(10)
 		for j in range(10):
 			# print(W[j], b[j])
-			prediction[j] = np.dot(W[j], validation_data[i]) + b[j]
-		ind = np.argmax(prediction)
-		if (prediction[ind] > best):
-			best = prediction[ind]
-			label_prediction = ind
-		# print(ind)
-
+			prediction[j] = sigmoid(np.dot(W[j], validation_data[i]) + b[j])
+		label_prediction = np.argmax(prediction)
+		
 		# print("Validation ", label_prediction, np.argmax(validation_labels[i]))
 
 		if label_prediction == np.argmax(validation_labels[i]):
@@ -192,7 +186,7 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 			batch_inputs = np.array(train_data[ini:fim])
 			batch_labels = np.array(train_labels[ini:fim])
 			
-			# batch_inputs, batch_labels = shuffle(batch_inputs, batch_labels)
+			batch_inputs, batch_labels = shuffle(batch_inputs, batch_labels)
 
 			b, W, loss = gradient_descent(W, b, batch_inputs, batch_labels, learning_rate)
 
@@ -201,8 +195,8 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 
 			ac = validation(W, b, validation_data, validation_labels)
 
-			if ac >= best:
-				print("ac = ", ac)
+			if ac > best:
+				print("new best = ", ac)
 				best = ac
 				outfile = open('ac', 'w')
 				pickle.dump(ac, outfile)
