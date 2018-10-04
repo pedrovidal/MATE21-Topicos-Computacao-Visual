@@ -195,11 +195,27 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 
 	batch_size = 50
 	num_steps = train_size / batch_size
-	learning_rate = 0.5
+	learning_rate = 1.0
 
 	infile = open('./mlp/ac', 'r')
 	best = pickle.load(infile)
 	infile.close()
+
+	# infile = open('./mlp/weights0', 'r')
+	# W0 = pickle.load(infile)
+	# infile.close()
+
+	# infile = open('./mlp/bias0', 'r')
+	# b0 = pickle.load(infile)
+	# infile.close()
+
+	# infile = open('./mlp/weights1', 'r')
+	# W1 = pickle.load(infile)
+	# infile.close()
+
+	# infile = open('./mlp/bias1', 'r')
+	# b1 = pickle.load(infile)
+	# infile.close()
 
 	print("best =", best)
 	
@@ -213,7 +229,7 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 
 	# print("Validation =", validation(best_W, best_b, validation_data, validation_labels))
 
-	for x in range(100):
+	for x in range(500):
 		# if x % 100 == 0 and x > 0:
 		# 	learning_rate = learning_rate - 1e-1
 		print("Epoca", x)

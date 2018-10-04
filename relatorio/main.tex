@@ -1,0 +1,42 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Relatório 1}
+
+\author{\IEEEauthorblockN{1\textsuperscript{th} Pedro Vidal Sales}
+\IEEEauthorblockA{\textit{Universidade Federal da Bahia} \\
+\textit{Tópicos em Computação Visual 3\\Professor: Maurício Pamplona}}
+}
+
+
+\maketitle
+
+\section{Introdução}
+Esse relátorio explica os parâmetros utilizados para treinar o modelo de regressão logística e o multi-layer perceptron para a tarefa de classificar digitos.
+
+\section{Regressão Logística}
+
+\subsection{Divisão entre treino e validação}
+A base de dados utilizada possui 5000 imagens disponíveis para treino, divididas igualmente em 10 classes, uma para cada digito. Após carregar a base, os dados foram permutados aleatoriamente (imagens e labels correspondentes), e depois divididos entre treino e validação. As primeiras 4000 imagens (depois da permutação) foram utilizadas no conjunto de treino, e as outras 1000 imagens foram utilizadas para validação.
+
+\subsection{Treino}
+O modelo foi treinado por 100 épocas. Cada época corresponde a uma passada por todos os exemplos da base. Foram testados diversos tamanhos de mini-batch entre 25 e 200, mas o valor que obteve melhores resultados foi o tamanho 50, por isso ele foi utilizado. O número de passos utilizado foi o número de exemplos do conjunto de treino dividido pelo tamanho do mini-batch, para garantir que cada exemplo da base só seria utilizado uma vez por época. A cada passo o mini-batch selecionado era permutado aleatoriamente, junto com os labels. Os valores dos pesos e bias foram atualizados com base no gradiente descendente e na taxa de aprendizado. A taxa de aprendizado utilizada foi 0.5, pois taxas menores não alcançavam resultados tão bons, e taxas maiores, como por exemplo 0.6 alcançavam resultados próximos, mas a medida que a taxa aumentava, a acuracia para o conjunto de validação piorava. A função de ativação utilizada para calcular as probabilidades de cada classe foi a função sigmoid.
+
+\subsection{Resultados}
+O melhor resultado obtido para o conjunto de validação encontrado foi 86.9\% de acuracia, utilizando os parâmetros descritos na seção anterior.
+
+
+
+\end{document}
