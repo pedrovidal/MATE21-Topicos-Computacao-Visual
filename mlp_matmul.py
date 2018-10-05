@@ -15,10 +15,13 @@ def debug(data, labels):
 			cv2.waitKey(0)
 
 def initW(data_size):
+	mu, sigma = 0, 0.1 # mean and standard deviation
+	# return np.random.normal(mu, sigma, data_size)
 	return np.random.uniform(-0.01, 0.01, data_size)
 
 def initB():
-	return np.random.random()
+	return np.random.uniform(-1.0, 1.0, 1)
+	# return np.random.random()
 
 def load_data(path, num_classes):
 	data = []
@@ -103,17 +106,17 @@ def gradient_descent(W0, b0, W1, b1, batch_inputs, batch_labels, learning_rate):
 		# print("deltaK ", deltaK)
 		# print("deltaK * hidden", np.expand_dims(deltaK, 1) * np.expand_dims(hidden, 0))
 
-		grad_W1 += np.expand_dims(deltaK, 1) * np.expand_dims(hidden, 0)
+		grad_W1 += np.matmul(np.expand_dims(deltaK, 1), np.expand_dims(hidden, 0))
 		grad_b1 += deltaK
 
-		loss = 1.0 / 2.0 * (np.sum((y_ - y)**2))
+		# loss = 1.0 / 2.0 * (np.sum((y_ - y)**2))
 		
-		deltaJ = hidden * (1 - hidden) * np.sum(np.dot(deltaK, W1))
+		deltaJ = hidden * (1 - hidden) * np.sum(np.matmul(deltaK, W1))
 
-		grad_W0 += np.expand_dims(deltaJ, 1) * np.expand_dims(x, 0)
+		grad_W0 += np.matmul(np.expand_dims(deltaJ, 1), np.expand_dims(x, 0))
 		grad_b0 += deltaJ
 
-	loss /= batch_size
+	# loss /= batch_size
 
 	grad_b0 /= batch_size
 	grad_W0 /= batch_size
@@ -141,19 +144,10 @@ def validation(W0, b0, W1, b1, validation_data, validation_labels):
 	num_classes = b1.shape[0]
 
 	for i in range(validation_size):
-		best = 0
-		label_prediction = 0
-		hidden = np.empty(num_nodes)
-		prediction = np.empty(10)
+		hidden = sigmoid(np.matmul(W0, validation_data[i]) + b0)
 
-		for j in range(num_nodes):
-			z = np.dot(W0[j], validation_data[i]) + b0[j]
-			hidden[j] = sigmoid(z)
-
-		for k in range(num_classes):
-			z = np.dot(W1[k], hidden) + b1[k]
-			prediction[k] = sigmoid(z)
-
+		prediction = sigmoid(np.matmul(W1, hidden) + b1)
+		
 		label_prediction = np.argmax(prediction)
 
 		# print("Validation ", label_prediction, np.argmax(validation_labels[i]))
@@ -189,35 +183,35 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 
 	batch_size = 50
 	num_steps = train_size / batch_size
-	learning_rate = 0.5
+	learning_rate = 0.1
 
-	infile = open('./mlp/ac', 'r')
+	infile = open('./mlp_matmul/ac', 'r')
 	best = pickle.load(infile)
 	infile.close()
 
-	# infile = open('./mlp/weights0', 'r')
+	# infile = open('./mlp_matmul/weights0', 'r')
 	# W0 = pickle.load(infile)
 	# infile.close()
 
-	# infile = open('./mlp/bias0', 'r')
+	# infile = open('./mlp_matmul/bias0', 'r')
 	# b0 = pickle.load(infile)
 	# infile.close()
 
-	# infile = open('./mlp/weights1', 'r')
+	# infile = open('./mlp_matmul/weights1', 'r')
 	# W1 = pickle.load(infile)
 	# infile.close()
 
-	# infile = open('./mlp/bias1', 'r')
+	# infile = open('./mlp_matmul/bias1', 'r')
 	# b1 = pickle.load(infile)
 	# infile.close()
 
 	print("best =", best)
 	
-	# infile = open('./mlp/weights', 'r')
+	# infile = open('./mlp_matmul/weights', 'r')
 	# best_W = pickle.load(infile)
 	# infile.close()
 
-	# infile = open('./mlp/bias', 'r')
+	# infile = open('./mlp_matmul/bias', 'r')
 	# best_b = pickle.load(infile)
 	# infile.close()
 
@@ -230,54 +224,60 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 		ini = 0
 		fim = batch_size - 1
 		best_now = 0
+
+		# train_data, train_labels = shuffle(train_data, train_labels)
+
 		for i in range(num_steps):
 			# print("Step", i)
 			batch_inputs = np.array(train_data[ini:fim])
 			batch_labels = np.array(train_labels[ini:fim])
 			
-			batch_inputs, batch_labels = shuffle(batch_inputs, batch_labels)
-
 			W0, b0, W1, b1, loss = gradient_descent(W0, b0, W1, b1, batch_inputs, batch_labels, learning_rate)
 
 			ini += batch_size
 			fim += batch_size
 
 			ac = validation(W0, b0, W1, b1, validation_data, validation_labels)
-			# print("ac =", ac)
-			# if ac >= best:
-			# 	print("ac = ", ac)
-			# 	best = ac
-			# 	outfile = open('./mlp/ac', 'w')
-			# 	pickle.dump(ac, outfile)
-			# 	outfile.close()
+			# if i % 50 == 0:
+			# print(i, "ac = ", ac)
+			if ac > best:
+				print(i, "ac = ", ac)
+				best = ac
+				outfile = open('./mlp_matmul/ac', 'w')
+				pickle.dump(ac, outfile)
+				outfile.close()
 
-			# 	best_W0 = W0
-			# 	outfile = open('./mlp/weights0', 'w')
-			# 	pickle.dump(W0, outfile)
-			# 	outfile.close()
+				best_W0 = W0
+				outfile = open('./mlp_matmul/weights0', 'w')
+				pickle.dump(W0, outfile)
+				outfile.close()
 
-			# 	best_b0 = b0
-			# 	outfile = open('./mlp/bias0', 'w')
-			# 	pickle.dump(b0, outfile)
-			# 	outfile.close()
+				best_b0 = b0
+				outfile = open('./mlp_matmul/bias0', 'w')
+				pickle.dump(b0, outfile)
+				outfile.close()
 
-			# 	best_W1 = W1
-			# 	outfile = open('./mlp/weights1', 'w')
-			# 	pickle.dump(W1, outfile)
-			# 	outfile.close()
+				best_W1 = W1
+				outfile = open('./mlp_matmul/weights1', 'w')
+				pickle.dump(W1, outfile)
+				outfile.close()
 
-			# 	best_b1 = b1
-			# 	outfile = open('./mlp/bias1', 'w')
-			# 	pickle.dump(b1, outfile)
-			# 	outfile.close()
+				best_b1 = b1
+				outfile = open('./mlp_matmul/bias1', 'w')
+				pickle.dump(b1, outfile)
+				outfile.close()
 
-			# 	outfile = open('./mlp/learning_rate', 'w')
-			# 	pickle.dump(learning_rate, outfile)
-			# 	outfile.close()
+				outfile = open('./mlp_matmul/learning_rate', 'w')
+				pickle.dump(learning_rate, outfile)
+				outfile.close()
 
-			# 	outfile = open('./mlp/batch_size', 'w')
-			# 	pickle.dump(batch_size, outfile)
-			# 	outfile.close()
+				outfile = open('./mlp_matmul/batch_size', 'w')
+				pickle.dump(batch_size, outfile)
+				outfile.close()
+
+				outfile = open('./mlp_matmul/num_nodes', 'w')
+				pickle.dump(num_nodes, outfile)
+				outfile.close()
 
 			best_now = max(ac, best_now)
 			
@@ -290,7 +290,7 @@ def main():
 	need_split = True
 
 	num_classes = 10
-	num_nodes = 100 # numero de nos da camada hidden
+	num_nodes = 1000 # numero de nos da camada hidden
 
 	data, labels = load_data('./data_part1/train', num_classes)
 	

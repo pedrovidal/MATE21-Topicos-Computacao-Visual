@@ -32,10 +32,21 @@ Esse relátorio explica os parâmetros utilizados para treinar o modelo de regre
 A base de dados utilizada possui 5000 imagens disponíveis para treino, divididas igualmente em 10 classes, uma para cada digito. Após carregar a base, os dados foram permutados aleatoriamente (imagens e labels correspondentes), e depois divididos entre treino e validação. As primeiras 4000 imagens (depois da permutação) foram utilizadas no conjunto de treino, e as outras 1000 imagens foram utilizadas para validação.
 
 \subsection{Treino}
-O modelo foi treinado por 100 épocas. Cada época corresponde a uma passada por todos os exemplos da base. Foram testados diversos tamanhos de mini-batch entre 25 e 200, mas o valor que obteve melhores resultados foi o tamanho 50, por isso ele foi utilizado. O número de passos utilizado foi o número de exemplos do conjunto de treino dividido pelo tamanho do mini-batch, para garantir que cada exemplo da base só seria utilizado uma vez por época. A cada passo o mini-batch selecionado era permutado aleatoriamente, junto com os labels. Os valores dos pesos e bias foram atualizados com base no gradiente descendente e na taxa de aprendizado. A taxa de aprendizado utilizada foi 0.5, pois taxas menores não alcançavam resultados tão bons, e taxas maiores, como por exemplo 0.6 alcançavam resultados próximos, mas a medida que a taxa aumentava, a acuracia para o conjunto de validação piorava. A função de ativação utilizada para calcular as probabilidades de cada classe foi a função sigmoid.
+O modelo foi treinado por 100 épocas. Cada época corresponde a uma passada por todos os exemplos da base. Foram testados diversos tamanhos de mini-batch entre 25 e 200, mas o valor que obteve melhores resultados foi o tamanho 50, por isso ele foi utilizado. O número de passos utilizado foi o número de exemplos do conjunto de treino dividido pelo tamanho do mini-batch, para garantir que cada exemplo da base só seria utilizado uma vez por época. Os valores dos pesos e bias foram atualizados com base no gradiente descendente e na taxa de aprendizado. A taxa de aprendizado utilizada foi 0.5, pois taxas menores não alcançavam resultados tão bons, e taxas maiores, como por exemplo 0.6 alcançavam resultados próximos, mas a medida que a taxa aumentava, a acurácia para o conjunto de validação piorava. A função de ativação utilizada para calcular as probabilidades de cada classe foi a função sigmoid. Os pesos foram inicializados com valores entre -0.01 e 0.01, e os bias foram inicializados com valores entre 0 e 1.
 
 \subsection{Resultados}
-O melhor resultado obtido para o conjunto de validação encontrado foi 86.9\% de acuracia, utilizando os parâmetros descritos na seção anterior.
+O melhor resultado obtido para o conjunto de validação encontrado foi 86.9\% de acurácia, utilizando os parâmetros descritos na seção anterior.
+
+\section{Multilayer Perceptron}
+
+\subsection{Divisão entre treino e validação}
+A divisão da base para o multilayer perceptron foi feita da mesma forma que a divisão para a regressão logística, porém, apesar de o ideal ser utilizar o mesmo conjunto de treino e validação para ambos os experimentos, acredita-se que esse não foi o caso, e os conjuntos de treino e validação apesar de manterem os mesmos tamanhos, não são os mesmos.
+
+\subsection{Treino}
+O melhor modelo foi treinado por 50 épocas. O motivo da diminuição do número de épocas utilizadas para treino é que o novo modelo acabou sendo muito mais custoso para treinar e os resultados obtidos ao tentar treinar por mais épocas não indicaram melhoras no resultado. A camada intermediaria utilizada possuia 150 nós, camadas com mais nós se mostraram mais dificeis de treinar, por demandar mais tempo. O tamanho do mini-batch e número de passos foram iguais aos utilizados na regressão logística, pelos mesmos motivos explicados na sessão anterior. A taxa de aprendizado foi aumentada para 0.8, pois valores menores demoravam muito para obter bons resultados. Os pesos foram inicializados com valores entre -0.1 e 0.1, e os bias foram inicializados com valores entre -0.01 e 0.01.
+
+\subsection{Resultados}
+O melhor resultado obtido para o conjunto de validação foi 78.4\% de acurácia, utilizando os paramêtros descritos na seção anterior. Acredita-se que este resultado acabou sendo pior do que o obtido na seção anterior pois paramêtros como numero de nós da camada interna e número de épocas de treino não foram otimizados corretamente.
 
 
 

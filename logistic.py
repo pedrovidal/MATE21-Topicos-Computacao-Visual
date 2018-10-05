@@ -185,8 +185,6 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 			# print("Step", i)
 			batch_inputs = np.array(train_data[ini:fim])
 			batch_labels = np.array(train_labels[ini:fim])
-			
-			batch_inputs, batch_labels = shuffle(batch_inputs, batch_labels)
 
 			b, W, loss = gradient_descent(W, b, batch_inputs, batch_labels, learning_rate)
 
