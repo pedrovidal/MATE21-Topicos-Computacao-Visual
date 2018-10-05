@@ -155,12 +155,12 @@ def train(train_data, train_labels, validation_data, validation_labels, num_clas
 		print("best now = ", best_now)
 		# print("lr = ", learning_rate)
 
-def createGraph(input_size):
+def createGraph(input_size, num_classes):
 	x = tf.placeholder(tf.float32, (None, input_size))
-	y_ = tf.placeholder(tf.float32, (None,))
+	y = tf.placeholder(tf.float32, (None,))
 	learning_rate = tf.placeholder(tf.float32, (1,))
 
-	y = tf.layers.dense(x, y_, activation=tf.nn.sigmoid)
+	y_ = tf.layers.dense(x, num_classes, activation=tf.nn.sigmoid)
 
 	loss = tf.reduce_mean((y - y_) ** 2)
 
