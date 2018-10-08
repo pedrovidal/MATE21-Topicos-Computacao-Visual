@@ -46,31 +46,30 @@ def split_dataset(data, labels, train_percentage):
 def reshape_data(data):
 	return data.reshape(np.shape(data)[0], -1)
 
-def createGraph(num_pixels, num_channels, num_classes):
-	graph = tf.Graph()
-	with graph.as_default():
-		x = tf.placeholder(tf.float32, (None, num_pixels*num_channels))
-		y = tf.placeholder(tf.float32, (None, 10))
+class Model():
+	def __init__(self, num_pixels, num_channels, num_classes):
+		self.x = tf.placeholder(tf.float32, (None, num_pixels*num_channels))
+		self.y = tf.placeholder(tf.float32, (None, 10))
 		# learning_rate = tf.placeholder(tf.float32, (1,))
-		learning_rate = 5e-4
+		self.learning_rate = 5e-4
 
-		y_ = tf.layers.dense(x, num_classes, activation=tf.nn.sigmoid)
+		self.y_ = tf.layers.dense(self.x, num_classes, activation=tf.nn.sigmoid)
 
-		loss = tf.reduce_mean((y - y_) ** 2)
+		self.loss = tf.reduce_mean((self.y - self.y_) ** 2)
 
-		train_opt = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
+		self.train_opt = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.loss)
 
-		prediction = tf.cast(tf.argmax(y_, 1), tf.float32)
+		self.prediction = tf.cast(tf.argmax(self.y_, 1), tf.float32)
+		self.label = tf.cast(tf.argmax(self.y, 1), tf.float32)
 
-		ac_batch = tf.reduce_sum(tf.cast(tf.equal(prediction, y), tf.float32))
-	return graph
+		self.ac_batch = tf.reduce_sum(tf.cast(tf.equal(self.prediction, self.label), tf.float32))
 
-def train(graph, train_data, train_labels, num_epochs = 100):
-	sess = tf.Session(graph = graph)
+def train(train_data, train_labels, validation_data, validation_labels, model, num_epochs = 1000):
+	sess = tf.Session()
 	sess.run(tf.global_variables_initializer())
 
 	batch_size = 50
-	learning_rate = 5e-4
+	learning_rate = 5e-1
 	num_steps = len(train_data) / batch_size
 
 	for ep in range(num_epochs):
@@ -80,17 +79,19 @@ def train(graph, train_data, train_labels, num_epochs = 100):
 		for i in range(0, len(train_data), batch_size):
 			batch_input = np.array(train_data[i : i + batch_size])
 			batch_labels = np.array(train_labels[i : i + batch_size])
-			loss_batch, ac_batch = sess.run([loss, ac_batch], feed_dict = {x: batch_input, y: batch_labels})
+			loss_batch, ac_batch, _ = sess.run([model.loss, model.ac_batch, model.train_opt], feed_dict={model.x: batch_input, model.y: batch_labels})
 			loss_epoch += loss_batch
 			ac_epoch += ac_batch
-		print('Epoca', x, 'ac =', ac_epoch, 'loss =', loss_epoch)
+			loss_validation, ac_validation = sess.run([model.loss, model.ac_batch], feed_dict={model.x: validation_data, model.y:validation_labels})
+		print('Epoca', ep)
+		print('ac_treino =', ac_epoch / len(train_data), 'loss_treino =', loss_epoch)
+		print('ac_validation =', ac_validation / len(validation_data), 'loss_validation =', loss_validation)
 
 def main():
 	need_shuffle = True
 	need_split = True
 
 	num_classes = 10
-	num_nodes = 1000 # numero de nos da camada hidden
 
 	data, labels = load_data('../data_part1/train', num_classes)
 	
@@ -116,9 +117,9 @@ def main():
 
 	print(num_pixels, num_channels)
 
-	graph = createGraph(num_pixels, num_channels, num_classes)
+	model = Model(num_pixels, num_channels, num_classes)
 
-	train(graph = graph, train_data = train_data, train_labels = train_labels)
+	train(train_data=train_data, train_labels=train_labels, validation_data=validation_data, validation_labels=validation_labels, model=model)
 
 if __name__ == "__main__":
 	np.random.seed(1)
