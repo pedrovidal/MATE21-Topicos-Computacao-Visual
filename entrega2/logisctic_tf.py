@@ -57,7 +57,7 @@ class Model():
 
 		self.loss = tf.reduce_mean((self.y - self.y_) ** 2)
 
-		self.train_opt = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.loss)
+		self.train_opt = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
 
 		self.prediction = tf.cast(tf.argmax(self.y_, 1), tf.float32)
 		self.label = tf.cast(tf.argmax(self.y, 1), tf.float32)
@@ -68,14 +68,15 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
 	sess = tf.Session()
 	sess.run(tf.global_variables_initializer())
 
-	batch_size = 50
-	learning_rate = 5e-1
+	batch_size = 8
+	learning_rate = 1e-5
 	num_steps = len(train_data) / batch_size
 
 	for ep in range(num_epochs):
 		best_now = 0
 		ac_epoch = 0
 		loss_epoch = 0
+		train_data, train_labels = shuffle(train_data, train_labels)
 		for i in range(0, len(train_data), batch_size):
 			batch_input = np.array(train_data[i : i + batch_size])
 			batch_labels = np.array(train_labels[i : i + batch_size])
@@ -84,7 +85,7 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
 			ac_epoch += ac_batch
 			loss_validation, ac_validation = sess.run([model.loss, model.ac_batch], feed_dict={model.x: validation_data, model.y:validation_labels})
 		print('Epoca', ep)
-		print('ac_treino =', ac_epoch / len(train_data), 'loss_treino =', loss_epoch)
+		print('ac_treino =', ac_epoch / len(train_data), 'loss_treino =', loss_epoch / num_steps)
 		print('ac_validation =', ac_validation / len(validation_data), 'loss_validation =', loss_validation)
 
 def main():
@@ -115,7 +116,7 @@ def main():
 	num_pixels = train_data[0].shape[0]
 	num_channels = 1
 
-	print(num_pixels, num_channels)
+	# print(num_pixels, num_channels)
 
 	model = Model(num_pixels, num_channels, num_classes)
 
