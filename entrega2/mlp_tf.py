@@ -14,9 +14,9 @@ def load_data(path, num_classes):
 		for file_name in os.listdir(os.path.join(path, dirs)):
 			img_path = os.path.join(path, dirs, file_name)
 			data.append(cv2.imread(img_path, cv2.IMREAD_UNCHANGED))
-			one_hot_label = np.zeros(num_classes)
-			one_hot_label[int(dirs)] = 1
-			labels.append(one_hot_label)
+			# one_hot_label = np.zeros(num_classes)
+			# one_hot_label[int(dirs)] = 1
+			labels.append(int(dirs))
 
 	data = np.array(data, dtype=np.float)
 	data /= 255.0
@@ -47,20 +47,21 @@ def reshape_data(data):
 	return data.reshape(np.shape(data)[0], -1)
 
 class Model():
-	def __init__(self, num_pixels, num_channels, num_classes):
+	def __init__(self, num_pixels, num_channels, num_classes, num_nodes):
 		self.x = tf.placeholder(tf.float32, (None, num_pixels*num_channels))
-		self.y = tf.placeholder(tf.float32, (None, 10))
-		# learning_rate = tf.placeholder(tf.float32, (1,))
-		self.learning_rate = 5e-3
+		self.y = tf.placeholder(tf.int32, (None,))
+		self.learning_rate = tf.placeholder(tf.float32)
 
-		self.y_ = tf.layers.dense(self.x, num_classes, activation=tf.nn.sigmoid)
+		fc = tf.layers.dense(self.x, num_nodes, activation=tf.nn.relu)
+		self.y_ = tf.layers.dense(fc, num_classes, activation=None)
 
-		self.loss = tf.reduce_mean((self.y - self.y_) ** 2)
+		# self.loss = tf.reduce_mean((self.y - self.y_) ** 2)
+		self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.y_, labels=self.y))
 
 		self.train_opt = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
 
 		self.prediction = tf.cast(tf.argmax(self.y_, 1), tf.float32)
-		self.label = tf.cast(tf.argmax(self.y, 1), tf.float32)
+		self.label = tf.cast(self.y, tf.float32)
 
 		self.ac_batch = tf.reduce_sum(tf.cast(tf.equal(self.prediction, self.label), tf.float32))
 
@@ -69,6 +70,7 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
 	sess.run(tf.global_variables_initializer())
 
 	batch_size = 8
+	learning_rate = 1e-4
 	num_steps = len(train_data) / batch_size
 
 	for ep in range(num_epochs):
@@ -79,7 +81,7 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
 		for i in range(0, len(train_data), batch_size):
 			batch_input = np.array(train_data[i : i + batch_size])
 			batch_labels = np.array(train_labels[i : i + batch_size])
-			loss_batch, ac_batch, _ = sess.run([model.loss, model.ac_batch, model.train_opt], feed_dict={model.x: batch_input, model.y: batch_labels})
+			loss_batch, ac_batch, _ = sess.run([model.loss, model.ac_batch, model.train_opt], feed_dict={model.x: batch_input, model.y: batch_labels, model.learning_rate: learning_rate})
 			loss_epoch += loss_batch
 			ac_epoch += ac_batch
 			loss_validation, ac_validation = sess.run([model.loss, model.ac_batch], feed_dict={model.x: validation_data, model.y:validation_labels})
@@ -115,9 +117,11 @@ def main():
 	num_pixels = train_data[0].shape[0]
 	num_channels = 1
 
+	num_nodes = 1024
+
 	# print(num_pixels, num_channels)
 
-	model = Model(num_pixels, num_channels, num_classes)
+	model = Model(num_pixels, num_channels, num_classes, num_nodes)
 
 	train(train_data=train_data, train_labels=train_labels, validation_data=validation_data, validation_labels=validation_labels, model=model)
 
