@@ -64,9 +64,13 @@ class Model():
 
 		self.ac_batch = tf.reduce_sum(tf.cast(tf.equal(self.prediction, self.label), tf.float32))
 
-def train(train_data, train_labels, validation_data, validation_labels, model, num_epochs = 1000):
+def train(train_data, train_labels, validation_data, validation_labels, model, num_epochs = 100):
 	sess = tf.Session()
 	sess.run(tf.global_variables_initializer())
+
+	saver = tf.train.Saver(save_relative_paths=True)
+
+	best = 0
 
 	batch_size = 8
 	num_steps = len(train_data) / batch_size
@@ -86,6 +90,11 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
 		print('Epoca', ep)
 		print('ac_treino =', ac_epoch / len(train_data), 'loss_treino =', loss_epoch / num_steps)
 		print('ac_validation =', ac_validation / len(validation_data), 'loss_validation =', loss_validation)
+
+		if ac_validation > best:
+			best = ac_validation
+			saver.save(sess, './model_logistic')
+			print('best =', best)
 
 def main():
 	need_shuffle = True
@@ -121,6 +130,6 @@ def main():
 
 	train(train_data=train_data, train_labels=train_labels, validation_data=validation_data, validation_labels=validation_labels, model=model)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
 	np.random.seed(1)
 	main()
