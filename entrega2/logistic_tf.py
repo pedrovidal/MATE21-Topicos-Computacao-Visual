@@ -64,13 +64,15 @@ class Model():
 
 		self.ac_batch = tf.reduce_sum(tf.cast(tf.equal(self.prediction, self.label), tf.float32))
 
-def train(train_data, train_labels, validation_data, validation_labels, model, num_epochs = 100):
+def train(train_data, train_labels, validation_data, validation_labels, model, num_epochs = 50):
 	sess = tf.Session()
 	sess.run(tf.global_variables_initializer())
 
 	saver = tf.train.Saver(save_relative_paths=True)
 
-	best = 0
+	infile = open('./logistic_results/best_ac', 'r')
+	best = pickle.load(infile)
+	infile.close()
 
 	batch_size = 8
 	num_steps = len(train_data) / batch_size
@@ -80,6 +82,8 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
 		ac_epoch = 0
 		loss_epoch = 0
 		train_data, train_labels = shuffle(train_data, train_labels)
+		print('Epoca', ep)
+		best_now = 0
 		for i in range(0, len(train_data), batch_size):
 			batch_input = np.array(train_data[i : i + batch_size])
 			batch_labels = np.array(train_labels[i : i + batch_size])
@@ -87,14 +91,23 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
 			loss_epoch += loss_batch
 			ac_epoch += ac_batch
 			loss_validation, ac_validation = sess.run([model.loss, model.ac_batch], feed_dict={model.x: validation_data, model.y:validation_labels})
-		print('Epoca', ep)
-		print('ac_treino =', ac_epoch / len(train_data), 'loss_treino =', loss_epoch / num_steps)
-		print('ac_validation =', ac_validation / len(validation_data), 'loss_validation =', loss_validation)
+		
+			ac_validation /= len(validation_data)
 
-		if ac_validation > best:
-			best = ac_validation
-			saver.save(sess, './logistic_results/model_logistic')
-			print('best =', best)
+			best_now = max(best_now, ac_validation)
+
+			if ac_validation > best:
+				best = ac_validation
+				saver.save(sess, './logistic_results/model_logistic')
+				# print('best =', best)
+		
+		print('ac_validation =', best_now)
+		print('ac_treino =', ac_epoch / len(train_data), 'loss_treino =', loss_epoch / num_steps)
+
+	print('best =', best)
+	outfile = open('./logistic_results/best_ac', 'w')
+	pickle.dump(best, outfile)
+	outfile.close()
 
 def main():
 	need_shuffle = True
