@@ -93,7 +93,7 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
 
 		if ac_validation > best:
 			best = ac_validation
-			saver.save(sess, './model_logistic')
+			saver.save(sess, './logistic_results/model_logistic')
 			print('best =', best)
 
 def main():

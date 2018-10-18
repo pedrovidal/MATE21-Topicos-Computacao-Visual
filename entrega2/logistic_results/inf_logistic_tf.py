@@ -43,7 +43,7 @@ class Model():
 def main():
 	num_classes = 10
 
-	test_data, names = load_data('../data_part1/test', num_classes)
+	test_data, names = load_data('../../data_part1/test', num_classes)
 	test_data = reshape_data(test_data)
 
 	num_pixels = test_data[0].shape[0]
