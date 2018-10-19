@@ -23,20 +23,25 @@ def reshape_data(data):
 	return data.reshape(np.shape(data)[0], -1)
 
 class Model():
-	def __init__(self, num_pixels, num_channels, num_classes):
+	def __init__(self, num_pixels, num_channels, num_classes, num_nodes):
 		self.x = tf.placeholder(tf.float32, (None, num_pixels*num_channels))
-		self.y = tf.placeholder(tf.float32, (None, 10))
-		# learning_rate = tf.placeholder(tf.float32, (1,))
-		self.learning_rate = 5e-4
+		self.y = tf.placeholder(tf.int32, (None,))
+		self.learning_rate = tf.placeholder(tf.float32)
+		self.dropout_rate = tf.placeholder(tf.float32)
+		self.is_train = tf.placeholder(tf.bool)
 
-		self.y_ = tf.layers.dense(self.x, num_classes, activation=tf.nn.sigmoid)
+		fc = tf.layers.dense(self.x, num_nodes, activation=tf.nn.relu)
 
-		self.loss = tf.reduce_mean((self.y - self.y_) ** 2)
+		dropout = tf.layers.dropout(fc, rate=self.dropout_rate, training=self.is_train);
+		
+		self.y_ = tf.layers.dense(dropout, num_classes, activation=None)
+
+		self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.y_, labels=self.y))
 
 		self.train_opt = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
 
 		self.prediction = tf.cast(tf.argmax(self.y_, 1), tf.float32)
-		self.label = tf.cast(tf.argmax(self.y, 1), tf.float32)
+		self.label = tf.cast(self.y, tf.float32)
 
 		self.ac_batch = tf.reduce_sum(tf.cast(tf.equal(self.prediction, self.label), tf.float32))
 
@@ -48,15 +53,16 @@ def main():
 
 	num_pixels = test_data[0].shape[0]
 	num_channels = 1
-	
-	model = Model(num_pixels, num_channels, num_classes)
+	num_nodes = 1024
+
+	model = Model(num_pixels, num_channels, num_classes, num_nodes)
 	
 	sess = tf.Session()
 
 	saver = tf.train.Saver()
 	saver.restore(sess, tf.train.latest_checkpoint('./'))
 
-	labels = sess.run(model.prediction, feed_dict={model.x: test_data})
+	labels = sess.run(model.prediction, feed_dict={model.x: test_data, model.dropout_rate: 0.0, model.is_train: False})
 
 
 	# print(labels)
