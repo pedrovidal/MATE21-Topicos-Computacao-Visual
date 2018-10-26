@@ -57,9 +57,15 @@ class Model():
 		conv1 = tf.layers.conv2d(inputs=self.x, filters=32, kernel_size=(3, 3), strides=(1, 1), padding='valid', activation=tf.nn.relu)
 		max_pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=(2, 2), strides=(2, 2), padding='valid')
 		
-		out1 = tf.reshape(max_pool1, [-1, max_pool1.shape[1]*max_pool1.shape[2]*max_pool1.shape[3]])
+		conv2 = tf.layers.conv2d(inputs=max_pool1, filters=64, kernel_size=(3, 3), strides=(1, 1), padding='valid', activation=tf.nn.relu)
+		max_pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=(2, 2), strides=(2, 2), padding='valid')
 
-		self.y_ = tf.layers.dense(out1, num_classes, activation=tf.nn.sigmoid)
+		conv3 = tf.layers.conv2d(inputs=max_pool2, filters=128, kernel_size=(3, 3), strides=(1, 1), padding='valid', activation=tf.nn.relu)
+		max_pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=(2, 2), strides=(2, 2), padding='valid')
+
+		out1 = tf.reshape(max_pool3, [-1, max_pool3.shape[1]*max_pool3.shape[2]*max_pool3.shape[3]])
+
+		self.y_ = tf.layers.dense(out1, num_classes, activation=None)
 
 		self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.y_, labels=self.y))
 
@@ -80,7 +86,7 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
 
 	saver = tf.train.Saver(save_relative_paths=True)
 	
-	# infile = open('./cnn/best_ac', 'r')
+	# infile = open('./cnn_results/best_ac', 'r')
 	# best = pickle.load(infile)
 	# infile.close()
 
@@ -110,13 +116,13 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
 			best_now = max(best_now, ac_validation)
 			if ac_validation > best:
 				best = ac_validation
-				saver.save(sess, './cnn/model_mlp')
+				saver.save(sess, './cnn_results/model_cnn')
 				# print('best =', best)
 		
 		print('ac_validation =', best_now)
 		print('ac_treino =', ac_epoch / len(train_data), 'loss_treino =', loss_epoch / num_steps)
 	print('best =', best)
-	outfile = open('./cnn/best_ac', 'w')
+	outfile = open('./cnn_results/best_ac', 'w')
 	pickle.dump(best, outfile)
 	outfile.close()
 
@@ -128,9 +134,7 @@ def main():
 
 	data, labels = load_data('../data_part1/train', num_classes)
 	
-	print(data[0].shape)
 	data = reshape_data(data)
-	print(data[0].shape)
 
 	image_h, image_w, num_channels = data[0].shape
 
