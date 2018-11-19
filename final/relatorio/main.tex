@@ -1,0 +1,62 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{nidanfloat}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{%
+  Relatório 3 \\
+  \large Convolutional Neural Networks \\
+    usando \textit{tensorflow}}
+
+\author{\IEEEauthorblockN{1\textsuperscript{th} Pedro Vidal Sales}
+\IEEEauthorblockA{\textit{Universidade Federal da Bahia} \\
+\textit{Tópicos em Computação Visual 3\\Professor: Maurício Pamplona}}
+}
+
+
+\maketitle
+
+\section{Introdução}
+Esse relátorio explica os parâmetros utilizados para treinar o modelo de rede convolucional para a tarefa de classificar digitos, utilizando a biblioteca \textit{tensorflow}.
+
+\section{CNN}
+
+\subsection{Divisão entre treino e validação}
+A base de dados utilizada possui 5000 imagens disponíveis para treino, divididas igualmente em 10 classes, uma para cada digito. A base foi ordenada e foi fixada uma \textit{seed} com valor 1, para que fosse possível recuperar os conjuntos de treino e validação. Após carregar a base, os dados foram permutados aleatoriamente (imagens e labels correspondentes), e depois divididos entre treino e validação. As primeiras 4000 imagens (depois da permutação) foram utilizadas no conjunto de treino, e as outras 1000 imagens foram utilizadas para validação.
+
+\subsection{Treino}
+Todos os modelos analisados foram treinados por 50 épocas. Cada época corresponde a uma passada por todos os exemplos da base. A cada época o conjunto de validação foi permutado aleatoriamente, para que os mini-batchs de cada época fossem diferentes. Cada mini-batch possui 8 exemplos. O número de passos utilizado foi o número de exemplos do conjunto de treino dividido pelo tamanho do mini-batch, para garantir que cada exemplo da base só seria utilizado uma vez por época. Os valores dos pesos e bias foram atualizados com base no otimizador Adam e na taxa de aprendizado. Para a taxa de aprendizado, foram testados os valores 0.005, 0.0005 e 0.00005, para uma mesma arquitetura, e a taxa que obteve melhores resultados foi 0.0005, por isso ela foi a utilizada para o treinamento das outras arquiteturas. Taxas menores demoravam para alcançar bons resultados, e taxas maiores não alcançavam bons resultados. A função de ativação utilizada nas camadas convolucionais e nas camadas \textit{fully connected} foi a função ReLU. A função de ativação utilizada para calcular as probabilidades de cada classe foi a função sigmoid. Os pesos e bias foram inicializados utilizando o inicializador \textit{global\_variables\_initializer} da própria biblioteca.
+
+\subsection{Resultados}
+Os resultados obtidos e as arquiteturas utilizadas estão descritos na tabela \ref{table:results}. 
+
+\begin{table*}[]
+\centering
+\begin{tabular}{|l|l|l|l|l|l|l|l|l|}
+\hline
+\multirow{2}{*}{Tamanho da Imagem} & \multicolumn{3}{l|}{Número de filtros por camada de convolução} & \multicolumn{3}{l|}{Número de nós por camada fc} & \multirow{2}{*}{Learning Rate} & \multirow{2}{*}{Resultado} \\ \cline{2-7}
+                                   & 1ª                  & 2ª                  & 3ª                  & 1ª              & 2ª             & 3ª            &                                &                            \\ \hline
+77x71                              & 36                  & 64                  & 128                 & 10              & -              & -             & 5e-3                           & 96.9\%                     \\ \hline
+77x71                              & 36                  & 64                  & 128                 & 10              & -              & -             & 5e-4                           & 97.2\%                     \\ \hline
+77x71                              & 36                  & 64                  & 128                 & 10              & -              & -             & 5e-5                           & 95.5\%                     \\ \hline
+64x64                              & 36                  & 64                  & 128                 & 10              & -              & -             & 5e-4                           & 97.3\%                     \\ \hline
+64x64                              & 36                  & 64                  & 128                 & 128             & 10             & -             & 5e-4                           & 97.5\%                     \\ \hline
+64x64                              & 16                  & 32                  & 128                 & 128             & 256            & 10            & 5e-4                           & 97.6\%                     \\ \hline
+\end{tabular}
+\caption{Comparação dos resultados obtidos}
+\label{table:results}
+\end{table*}
+
+\end{document}
