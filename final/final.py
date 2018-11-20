@@ -48,6 +48,25 @@ def split_dataset(data, labels, train_percentage):
 def reshape_data(data):
   return data.reshape(np.shape(data)[0], np.shape(data)[1], np.shape(data)[2], 1)
 
+def augmentate(batch_input):
+	new_batch = []
+	for i in range(len(batch_input)):
+		possible_values = [0, 1, 2, 3, 4, 5]
+		# probabilidade de sortear cada numero
+		# p = distribuicao de probabilidade
+		p = [1.0 / (len(possible_values) + 1)] * len(possible_values)
+		p[0] *= 2
+		tx = np.random.choice(possible_values, p=p)
+		ty = np.random.choice(possible_values)
+		M_translacao = np.float32([[1, 0, tx], [0, 1, ty]])
+		rows, cols, _ = batch_input[i].shape
+		img = cv2.warpAffine(batch_input[i], M_translacao, (cols, rows))
+		new_batch.append(img)
+
+	new_batch = np.array(new_batch, dtype=np.float)
+	return reshape_data(new_batch)
+
+
 class Model():
   def __init__(self, image_h, image_w, num_channels, num_classes):
     self.x = tf.placeholder(tf.float32, (None, image_h, image_w, num_channels))
@@ -82,7 +101,7 @@ class Model():
 
     self.ac_batch = tf.reduce_sum(tf.cast(tf.equal(self.prediction, self.label), tf.float32))
 
-def train(train_data, train_labels, validation_data, validation_labels, model, num_epochs = 25):
+def train(train_data, train_labels, validation_data, validation_labels, model, num_epochs=25, augmentation=True):
   sess = tf.Session()
   sess.run(tf.global_variables_initializer())
 
@@ -92,12 +111,11 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
 
   saver = tf.train.Saver(save_relative_paths=True)
   
-  # infile = open('./final/best_ac', 'r')
+  # infile = open('./result/best_ac', 'r')
   # best = pickle.load(infile)
   # infile.close()
 
   best = 0
-
 
   for ep in range(num_epochs):
     best_now = 0
@@ -111,6 +129,9 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
       cont += 1
       batch_input = np.array(train_data[i : i + batch_size])
       batch_labels = np.array(train_labels[i : i + batch_size])
+
+      if augmentation:
+      	batch_input = augmentate(batch_input)
 
       feed_dict_train = {model.x: batch_input, model.y: batch_labels, model.learning_rate: learning_rate}
       loss_batch, ac_batch, _ = sess.run([model.loss, model.ac_batch, model.train_opt], feed_dict=feed_dict_train)
@@ -127,7 +148,7 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
       best_now = max(best_now, ac_validation)
       if ac_validation > best:
         best = ac_validation
-        saver.save(sess, './final/model_cnn')
+        saver.save(sess, './result/model_cnn')
         # print('best =', best)
     
     print('ac_validation =', best_now)
