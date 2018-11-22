@@ -49,22 +49,60 @@ def reshape_data(data):
   return data.reshape(np.shape(data)[0], np.shape(data)[1], np.shape(data)[2], 1)
 
 def augmentate(batch_input):
-	new_batch = []
-	for i in range(len(batch_input)):
-		possible_values = [0, 1, 2, 3, 4, 5]
-		# probabilidade de sortear cada numero
-		# p = distribuicao de probabilidade
-		p = [1.0 / (len(possible_values) + 1)] * len(possible_values)
-		p[0] *= 2
-		tx = np.random.choice(possible_values, p=p)
-		ty = np.random.choice(possible_values)
-		M_translacao = np.float32([[1, 0, tx], [0, 1, ty]])
-		rows, cols, _ = batch_input[i].shape
-		img = cv2.warpAffine(batch_input[i], M_translacao, (cols, rows))
-		new_batch.append(img)
+  new_batch = []
+  for i in range(len(batch_input)):
+    img = batch_input[i]
+    img = img.reshape(img.shape[0], img.shape[1])
+    rows, cols = img.shape
 
-	new_batch = np.array(new_batch, dtype=np.float)
-	return reshape_data(new_batch)
+    if np.random.rand() >= 0.5:
+      # escala
+      scale_factor = np.random.rand()
+      interpol = cv2.INTER_AREA
+      if np.random.rand() >= 0.5:
+        scale_factor += 1
+        interpol = cv2.INTER_CUBIC
+        # img = cv2.resize(img, (cols, rows), fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_CUBIC)
+      if np.random.rand() >= 0.5:
+        img = cv2.resize(img, (cols, rows), fx=0, fy=scale_factor, interpolation=interpol)
+      else:
+        img = cv2.resize(img, (cols, rows), fx=scale_factor, fy=0, interpolation=interpol)
+
+    if np.random.rand() >= 0.25:
+      # rotacao
+      rotation_factor = np.random.choice([2.5, 5])
+      if np.random.rand() >= 0.5:
+        rotation_factor = -rotation_factor
+      M = cv2.getRotationMatrix2D((cols / 2, rows / 2), rotation_factor, 1)
+      img = cv2.warpAffine(img, M, (cols, rows))
+    
+    if np.random.rand() >= 0.0:
+      # translacao
+      possible_values = [0, 1, 2, 3]
+      # probabilidade de sortear cada numero
+      # p = distribuicao de probabilidade
+      p = [1.0 / (len(possible_values) + 1)] * len(possible_values)
+      p[0] *= 2
+      tx = np.random.choice(possible_values, p=p)
+      ty = np.random.choice(possible_values, p=p)
+      M_translacao = np.float32([[1, 0, tx], [0, 1, ty]])
+      img = cv2.warpAffine(img, M_translacao, (cols, rows))
+
+    # if np.random.rand() >= 0.5:
+    #   # contraste
+    #   img /= 2
+
+
+    new_batch.append(img)
+
+    # img *= 255
+
+    # print(img.shape)
+    # cv2.imshow('ImageWindow', img)
+    # cv2.waitKey()
+
+  new_batch = np.array(new_batch, dtype=np.float)
+  return reshape_data(new_batch)
 
 
 class Model():
@@ -131,7 +169,7 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
       batch_labels = np.array(train_labels[i : i + batch_size])
 
       if augmentation:
-      	batch_input = augmentate(batch_input)
+        batch_input = augmentate(batch_input)
 
       feed_dict_train = {model.x: batch_input, model.y: batch_labels, model.learning_rate: learning_rate}
       loss_batch, ac_batch, _ = sess.run([model.loss, model.ac_batch, model.train_opt], feed_dict=feed_dict_train)
