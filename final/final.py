@@ -52,50 +52,64 @@ def augmentate(batch_input):
   new_batch = []
   for i in range(len(batch_input)):
     img = batch_input[i]
+
+    # img *= 255
+    # cv2.imshow('ImageWindow', img)
+    # cv2.waitKey()
+    # img /= 255
+
     img = img.reshape(img.shape[0], img.shape[1])
     rows, cols = img.shape
 
-    if np.random.rand() >= 0.5:
+    # if np.random.rand() >= 0.5:
       # escala
-      scale_factor = np.random.rand()
-      interpol = cv2.INTER_AREA
-      if np.random.rand() >= 0.5:
-        scale_factor += 1
-        interpol = cv2.INTER_CUBIC
-        # img = cv2.resize(img, (cols, rows), fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_CUBIC)
-      if np.random.rand() >= 0.5:
-        img = cv2.resize(img, (cols, rows), fx=0, fy=scale_factor, interpolation=interpol)
-      else:
-        img = cv2.resize(img, (cols, rows), fx=scale_factor, fy=0, interpolation=interpol)
-
-    if np.random.rand() >= 0.25:
-      # rotacao
-      rotation_factor = np.random.choice([2.5, 5])
-      if np.random.rand() >= 0.5:
-        rotation_factor = -rotation_factor
-      M = cv2.getRotationMatrix2D((cols / 2, rows / 2), rotation_factor, 1)
-      img = cv2.warpAffine(img, M, (cols, rows))
-    
-    if np.random.rand() >= 0.0:
-      # translacao
-      possible_values = [0, 1, 2, 3]
-      # probabilidade de sortear cada numero
-      # p = distribuicao de probabilidade
-      p = [1.0 / (len(possible_values) + 1)] * len(possible_values)
-      p[0] *= 2
-      tx = np.random.choice(possible_values, p=p)
-      ty = np.random.choice(possible_values, p=p)
-      M_translacao = np.float32([[1, 0, tx], [0, 1, ty]])
-      img = cv2.warpAffine(img, M_translacao, (cols, rows))
+      # scale_factor = 0.25
+      # interpol = cv2.INTER_AREA
+      # if np.random.rand() >= 0.0:
+      #   scale_factor = 2
+      #   interpol = cv2.INTER_CUBIC
+      # if np.random.rand() >= 0.5:
+      #   M = cv2.getRotationMatrix2D((cols / 2, rows / 2), 0, 1.1)
+      #   img = cv2.warpAffine(img, M, (cols, rows))
+        # res = cv2.resize(img, (cols, rows), fx=1, fy=scale_factor, interpolation=interpol)
+        # img = res
+      # else:
+      #   M = cv2.getRotationMatrix2D((cols / 2, rows / 2), 0, 0.9)
+      #   img = cv2.warpAffine(img, M, (cols, rows))
+        # res = cv2.resize(img, (cols, rows), fx=scale_factor, fy=1, interpolation=interpol)
+        # img = res
 
     # if np.random.rand() >= 0.5:
-    #   # contraste
-    #   img /= 2
+    # rotacao
+    rotation_factor = np.random.choice([-5, -2.5, 0, 2.5, 5])
+    M = cv2.getRotationMatrix2D((cols / 2, rows / 2), rotation_factor, 1)
+    img = cv2.warpAffine(img, M, (cols, rows))
+    
+    # if np.random.rand() >= 0.25:
+    # translacao
+    possible_values = [0, 0, 0, 1, 2, 3, 4, 5]
+    # probabilidade de sortear cada numero
+    # p = distribuicao de probabilidade
+    p = [1.0 / len(possible_values)] * len(possible_values)
+    # p[0] *= 2
+    tx = np.random.choice(possible_values, p=p)
+    ty = np.random.choice(possible_values, p=p)
+    M_translacao = np.float32([[1, 0, tx], [0, 1, ty]])
+    img = cv2.warpAffine(img, M_translacao, (cols, rows))
 
+    # value = np.random.rand() + np.random.rand()
+    # if value >= 0.4:
+    #   # contraste
+    #   img *= value
 
     new_batch.append(img)
 
-    # img *= 255
+    # if np.random.rand() > 0.75:
+    #   orig = batch_input[i]
+    #   orig *= 255
+    #   cv2.imwrite('teste/orig.png', orig)
+    #   img *= 255
+    #   cv2.imwrite('teste/img.png', img)
 
     # print(img.shape)
     # cv2.imshow('ImageWindow', img)
