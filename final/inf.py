@@ -84,37 +84,49 @@ def main():
 
   num_classes = 10
 
-  print('Loading images...')
-
-  data, names = load_data('../data_part1/test', num_classes)
-  
-  data = reshape_data(data)
-
-  print('Images loaded.')
-
-  image_h, image_w, num_channels = data[0].shape
-
-  model = Model(image_h, image_w, num_channels, num_classes)
-
+  model = Model(64, 64, 1, num_classes)
   sess = tf.Session()
 
-  print('Restoring model...')
-
-  path = 'result_0983'
+  if FLAGS.debug:
+    print('Restoring model...')
 
   saver = tf.train.Saver()
-  saver.restore(sess, tf.train.latest_checkpoint(path))
+  saver.restore(sess, tf.train.latest_checkpoint(FLAGS.model_path))
 
-  print('Model restored.')
+  if FLAGS.debug:
+    print('Model restored.')
 
-  print('Making predictions...')
+  for file_name in sorted(os.listdir(FLAGS.data_path)):
+    data = []
 
-  labels = sess.run(model.prediction, feed_dict={model.x: data, model.is_train: False})
+    if FLAGS.debug:
+      print('Loading image', file_name)
+    
+    img_path = os.path.join(FLAGS.data_path, file_name)
+    img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+    img = cv2.resize(img, (64, 64))
 
-  print('Predictions made.')
+    data.append(img)
 
-  for i in range(len(names)):
-    print(names[i], int(labels[i]))
+    data = np.array(data, dtype=np.float)
+    data /= 255.0
+
+    data = reshape_data(data)
+
+    if FLAGS.debug:
+      print('Image loaded.')
+
+    image_h, image_w, num_channels = data[0].shape
+
+    if FLAGS.debug:
+      print('Making prediction...')
+
+    label = sess.run(model.prediction, feed_dict={model.x: data, model.is_train: False})
+
+    if FLAGS.debug:
+      print('Prediction made.')
+    
+    print(file_name, int(label))
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
@@ -130,6 +142,10 @@ if __name__ == "__main__":
     help='path to model')
   parser.add_argument(
     '--ensemble',
+    action='store_true',
+    help='whether or not to perform ensemble')
+  parser.add_argument(
+    '--debug',
     action='store_true',
     help='whether or not to perform ensemble')
   FLAGS = parser.parse_args()
