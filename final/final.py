@@ -87,7 +87,7 @@ def augmentate(batch_input):
     
     # if np.random.rand() >= 0.25:
     # translacao
-    possible_values = [0, 0, 0, 1, 2, 3, 4, 5]
+    possible_values = [0, 0, 0, 0, 0, 1, 2, 3, 4, 5]
     # probabilidade de sortear cada numero
     # p = distribuicao de probabilidade
     p = [1.0 / len(possible_values)] * len(possible_values)
@@ -153,7 +153,7 @@ class Model():
 
     self.ac_batch = tf.reduce_sum(tf.cast(tf.equal(self.prediction, self.label), tf.float32))
 
-def train(train_data, train_labels, validation_data, validation_labels, model, num_epochs=25, augmentation=True):
+def train(train_data, train_labels, validation_data, validation_labels, model, num_epochs=50, augmentation=True):
   sess = tf.Session()
   sess.run(tf.global_variables_initializer())
 
@@ -190,18 +190,18 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
       loss_epoch += loss_batch
       ac_epoch += ac_batch
 
-      feed_dict_validation = {model.x: validation_data, model.y: validation_labels}
-      loss_validation, ac_validation = sess.run([model.loss, model.ac_batch], feed_dict=feed_dict_validation)
-      ac_validation /= len(validation_data)
 
-      if cont % 10 == 0:
+      if cont % 100 == 0:
+        feed_dict_validation = {model.x: validation_data, model.y: validation_labels}
+        loss_validation, ac_validation = sess.run([model.loss, model.ac_batch], feed_dict=feed_dict_validation)
+        ac_validation /= len(validation_data)
         print('step[', cont, '/', num_steps, ']', ac_validation)
 
-      best_now = max(best_now, ac_validation)
-      if ac_validation > best:
-        best = ac_validation
-        saver.save(sess, './result/model_cnn')
-        # print('best =', best)
+        best_now = max(best_now, ac_validation)
+        if ac_validation > best:
+          best = ac_validation
+          saver.save(sess, './result/model_cnn')
+          # print('best =', best)
     
     print('ac_validation =', best_now)
     print('ac_treino =', ac_epoch / len(train_data), 'loss_treino =', loss_epoch / num_steps)
