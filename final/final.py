@@ -4,11 +4,13 @@ import numpy as np
 import os
 import pickle
 import sys
+import argparse
 import tensorflow as tf
 
 def load_data(path, num_classes):
   data = []
   labels = []
+  names = []
 
   for dirs in sorted(os.listdir(path)):
     for file_name in sorted(os.listdir(os.path.join(path, dirs))):
@@ -19,20 +21,23 @@ def load_data(path, num_classes):
       # one_hot_label = np.zeros(num_classes)
       # one_hot_label[int(dirs)] = 1
       labels.append(int(dirs))
+      names.append(img_path)
 
   data = np.array(data, dtype=np.float)
   data /= 255.0
   labels = np.array(labels)
-  return data, labels
+  names = np.array(names)
+  return data, labels, names
 
-def shuffle(data, labels):
+def shuffle(data, labels, names):
   data_size = len(data)
   permutation_index = np.random.permutation(data_size)
   shuffled_data = data[permutation_index]
   shuffled_labels = labels[permutation_index]
-  return shuffled_data, shuffled_labels
+  shuffled_names = names[permutation_index]
+  return shuffled_data, shuffled_labels, shuffled_names
 
-def split_dataset(data, labels, train_percentage):
+def split_dataset(data, labels, names, train_percentage):
   data_size = len(data)
 
   train_size = int(data_size * train_percentage / 100)
@@ -42,8 +47,9 @@ def split_dataset(data, labels, train_percentage):
 
   validation_data = data[train_size:data_size]
   validation_labels = labels[train_size:data_size]
+  validation_names = names[train_size:data_size]
 
-  return train_data, train_labels, validation_data, validation_labels
+  return train_data, train_labels, validation_data, validation_labels, validation_names
 
 def reshape_data(data):
   return data.reshape(np.shape(data)[0], np.shape(data)[1], np.shape(data)[2], 1)
@@ -62,23 +68,13 @@ def augmentate(batch_input):
     rows, cols = img.shape
 
     # if np.random.rand() >= 0.5:
-      # escala
-      # scale_factor = 0.25
-      # interpol = cv2.INTER_AREA
-      # if np.random.rand() >= 0.0:
-      #   scale_factor = 2
-      #   interpol = cv2.INTER_CUBIC
-      # if np.random.rand() >= 0.5:
-      #   M = cv2.getRotationMatrix2D((cols / 2, rows / 2), 0, 1.1)
-      #   img = cv2.warpAffine(img, M, (cols, rows))
-        # res = cv2.resize(img, (cols, rows), fx=1, fy=scale_factor, interpolation=interpol)
-        # img = res
-      # else:
-      #   M = cv2.getRotationMatrix2D((cols / 2, rows / 2), 0, 0.9)
-      #   img = cv2.warpAffine(img, M, (cols, rows))
-        # res = cv2.resize(img, (cols, rows), fx=scale_factor, fy=1, interpolation=interpol)
-        # img = res
-
+    # escala
+    value = np.random.rand()
+    if value < 0.5:
+      value += 1
+    M = cv2.getRotationMatrix2D((cols / 2, rows / 2), 0, value)
+    res = cv2.warpAffine(img, M, (cols, rows))
+      
     # if np.random.rand() >= 0.5:
     # rotacao
     rotation_factor = np.random.choice([-5, -2.5, 0, 2.5, 5])
@@ -153,7 +149,7 @@ class Model():
 
     self.ac_batch = tf.reduce_sum(tf.cast(tf.equal(self.prediction, self.label), tf.float32))
 
-def train(train_data, train_labels, validation_data, validation_labels, model, num_epochs=50, augmentation=True):
+def train(train_data, train_labels, validation_data, validation_labels, model, num_epochs=200, augmentation=True):
   sess = tf.Session()
   sess.run(tf.global_variables_initializer())
 
@@ -213,19 +209,19 @@ def main():
 
   num_classes = 10
 
-  data, labels = load_data('../data_part1/train', num_classes)
+  data, labels, names = load_data('../data_part1/train', num_classes)
   
   data = reshape_data(data)
 
   image_h, image_w, num_channels = data[0].shape
 
   if need_shuffle:
-    data, labels = shuffle(data, labels)
+    data, labels, names = shuffle(data, labels, names)
 
   if need_split:
     train_percentage = 80
     train_data, train_labels, \
-      validation_data, validation_labels = split_dataset(data, labels, train_percentage)
+      validation_data, validation_labels, validation_names = split_dataset(data, labels, names, train_percentage)
 
   else:
     train_data = data
@@ -237,8 +233,42 @@ def main():
 
   model = Model(image_h, image_w, num_channels, num_classes)
 
+  if FLAGS.compute_validation:
+
+    sess = tf.Session()
+
+    saver = tf.train.Saver()
+    saver.restore(sess, tf.train.latest_checkpoint(FLAGS.model_path))
+
+    validation_predictions = sess.run(model.prediction, feed_dict={model.x: validation_data, model.is_train: False})
+
+    for i in range(len(validation_data)):
+      print(validation_names[i], int(validation_predictions[i]))
+
+    return
+
   train(train_data=train_data, train_labels=train_labels, validation_data=validation_data, validation_labels=validation_labels, model=model)
 
 if __name__ == "__main__":
+  parser = argparse.ArgumentParser()
+  parser.add_argument(
+    '--data_path',
+    required=False,
+    type=str,
+    help='path to test dataset')
+  parser.add_argument(
+    '--model_path',
+    required=False,
+    type=str,
+    help='path to model')
+  parser.add_argument(
+    '--debug',
+    action='store_true',
+    help='whether or not to perform ensemble')
+  parser.add_argument(
+    '--compute_validation',
+    action='store_true',
+    help='whether or not to perform ensemble')
+  FLAGS = parser.parse_args()
   np.random.seed(1)
   main()
