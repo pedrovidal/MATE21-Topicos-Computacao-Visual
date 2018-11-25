@@ -60,7 +60,7 @@ class Model():
     self.ac_batch = tf.reduce_sum(tf.cast(tf.equal(self.prediction, self.label), tf.float32))
 
 def compute_ensemble():
-  print('Computing ensemble...')
+  # print('Computing ensemble...')
   votes = np.zeros((5490, 10))
   names = []
   for i, file_name in enumerate(sorted(os.listdir('result_files/'))):
@@ -72,11 +72,28 @@ def compute_ensemble():
         names.append(img_name)
       votes[j][int(label)] += 1
       # print(i, j, label, votes[j])
-  for i in range(5490):
+  for i in range(len(names)):
     print(names[i], np.argmax(votes[i]))
 
+def compute_ac_validation():
+  val_file = open('validation.txt')
+  labels = val_file.read().splitlines()
+  labels = sorted(labels)
+  for i, file_name in enumerate(sorted(os.listdir('result_files/'))):
+    ac = 0
+    file = open('result_files/' + file_name)
+    predictions = file.read().splitlines()
+    predictions = sorted(predictions)
+    for i in range(len(predictions)):
+      if predictions[i] == labels[i]:
+        ac += 1
+    print(file_name, ac)
 
 def main():
+
+  if FLAGS.compute_ac:
+    compute_ac_validation()
+    return
 
   if FLAGS.ensemble:
     compute_ensemble()
@@ -147,7 +164,11 @@ if __name__ == "__main__":
   parser.add_argument(
     '--debug',
     action='store_true',
-    help='whether or not to perform ensemble')
+    help='whether or not to print debugs')
+  parser.add_argument(
+    '--compute_ac',
+    action='store_true',
+    help='whether or not to compute ac in validation, validation predictions must be in result_files/')
   FLAGS = parser.parse_args()
   np.random.seed(1)
   main()
