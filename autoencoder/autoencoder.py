@@ -66,12 +66,16 @@ class Model():
 
     print('shape max_pool2', max_pool2.shape)
 
-    convt1 = tf.layers.conv2d_transpose(inputs=conv2, filters=16, kernel_size=(5, 5), strides=(2, 2), padding='same', activation=tf.nn.relu)
+    convt1 = tf.layers.conv2d_transpose(inputs=conv2, filters=16, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=tf.nn.relu)
     
     print('shape convt1', convt1.shape)
 
-    self.y_ = tf.layers.conv2d_transpose(inputs=convt1, filters=32, kernel_size=(5, 5), strides=(2, 2), padding='same', activation=tf.nn.relu)
-    
+    convt2 = tf.layers.conv2d_transpose(inputs=convt1, filters=32, kernel_size=(5, 5), strides=(2, 2), padding='same', activation=tf.nn.relu)
+   
+    print('shape convt2', convt2.shape)
+
+    self.y_ = tf.layers.conv2d_transpose(inputs=convt2, filters=1, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=tf.nn.relu)
+   
     print('shape output', self.y_.shape)
   
     # self.loss = tf.reduce_sum(abs(self.y_ - self.x)) # dist L1
@@ -81,7 +85,7 @@ class Model():
     self.train_opt = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
 
 
-def train(train_data, validation_data, model, num_epochs=25):
+def train(train_data, validation_data, model, num_epochs=200):
   sess = tf.Session()
   sess.run(tf.global_variables_initializer())
 
@@ -95,7 +99,7 @@ def train(train_data, validation_data, model, num_epochs=25):
   # best = pickle.load(infile)
   # infile.close()
 
-  best = 0
+  best = 1123456789
 
   for ep in range(num_epochs):
     best_now = 0
@@ -109,25 +113,30 @@ def train(train_data, validation_data, model, num_epochs=25):
       cont += 1
       batch_input = np.array(train_data[i : i + batch_size])
 
-      if augmentation:
-        batch_input = augmentate(batch_input)
-
       feed_dict_train = {model.x: batch_input, model.learning_rate: learning_rate}
       loss_batch, _ = sess.run([model.loss, model.train_opt], feed_dict=feed_dict_train)
       loss_epoch += loss_batch
 
-      feed_dict_validation = {model.x: validation_data, model.y: validation_labels}
-      loss_validation, imagens = sess.run([model.loss, model.y_], feed_dict=feed_dict_validation)
+      if cont % 100 == 0:
+        feed_dict_validation = {model.x: validation_data}
+        loss_validation, imagens = sess.run([model.loss, model.y_], feed_dict=feed_dict_validation)
 
-      if cont % 10 == 0:
-        cv2.imshow('img', imagens[0])
-        cv2.waitKey()
+        print('step[', cont, '/', num_steps, ']', 'loss validation =', loss_validation)
+        
+        ind = np.random.randint(len(validation_data))
 
-      best_now = max(best_now, loss)
-      if loss > best:
-        best = loss
-        saver.save(sess, './result/model_cnn')
-        # print('best =', best)
+        orig = validation_data[ind] * 255
+        img = imagens[ind] * 255
+
+
+        cv2.imwrite('teste/orig.png', orig)
+        cv2.imwrite('teste/decodificada.png', img)
+
+        best_now = max(best_now, loss_validation)
+        if loss_validation < best:
+          best = loss_validation
+          saver.save(sess, './result/model_cnn')
+          # print('best =', best)
     
     print('loss_validation =', best_now)
     print('loss_treino =', loss_epoch / num_steps)
