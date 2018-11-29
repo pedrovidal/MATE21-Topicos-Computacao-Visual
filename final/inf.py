@@ -63,8 +63,8 @@ def compute_ensemble():
   # print('Computing ensemble...')
   votes = np.zeros((5490, 10))
   names = []
-  for i, file_name in enumerate(sorted(os.listdir('result_files/'))):
-    file = open('result_files/' + file_name)
+  for i, file_name in enumerate(sorted(os.listdir('result_files/validation/'))):
+    file = open('result_files/validation/' + file_name)
     predictions = file.read().splitlines()
     for j, vote in enumerate(sorted(predictions)):
       img_name, label = vote.split()
@@ -79,9 +79,9 @@ def compute_ac_validation():
   val_file = open('validation.txt')
   labels = val_file.read().splitlines()
   labels = sorted(labels)
-  for i, file_name in enumerate(sorted(os.listdir('result_files/'))):
+  for i, file_name in enumerate(sorted(os.listdir('result_files/validation/'))):
     ac = 0
-    file = open('result_files/' + file_name)
+    file = open('result_files/validation/' + file_name)
     predictions = file.read().splitlines()
     predictions = sorted(predictions)
     for i in range(len(predictions)):

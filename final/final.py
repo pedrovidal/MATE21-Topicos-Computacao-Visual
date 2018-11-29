@@ -29,13 +29,41 @@ def load_data(path, num_classes):
   names = np.array(names)
   return data, labels, names
 
-def shuffle(data, labels, names):
+def load_test_data(data_path, labels_path):
+  data = []
+  labels = []
+  names = []
+
+  file = open(labels_path)
+  predictions = file.read().splitlines()
+
+  for i, file_name in enumerate(sorted(os.listdir(data_path))):
+    names.append(file_name)
+    img = cv2.imread(os.path.join(data_path, file_name), cv2.IMREAD_UNCHANGED)
+    img = cv2.resize(img, (64, 64))
+    data.append(img)
+    f_name, label = predictions[i].split()
+    if f_name != file_name:
+      print('ERRO: Nome do arquivo diferente do nome do label')
+      raise Exception('Nao foi possivel atribuir os labels corretamente')
+    labels.append(label)
+
+  data = np.array(data, dtype=np.float)
+  data /= 255.0
+  labels = np.array(labels)
+  names = np.array(names)
+  return data, labels, names
+
+
+def shuffle(data, labels, names=None):
   data_size = len(data)
   permutation_index = np.random.permutation(data_size)
   shuffled_data = data[permutation_index]
   shuffled_labels = labels[permutation_index]
-  shuffled_names = names[permutation_index]
-  return shuffled_data, shuffled_labels, shuffled_names
+  if names is not None:
+    shuffled_names = names[permutation_index]
+    return shuffled_data, shuffled_labels, shuffled_names
+  return shuffled_data, shuffled_labels
 
 def split_dataset(data, labels, names, train_percentage):
   data_size = len(data)
@@ -69,11 +97,11 @@ def augmentate(batch_input):
 
     # if np.random.rand() >= 0.5:
     # escala
-    value = np.random.rand()
-    if value < 0.5:
-      value += 1
-    M = cv2.getRotationMatrix2D((cols / 2, rows / 2), 0, value)
-    res = cv2.warpAffine(img, M, (cols, rows))
+    # value = np.random.rand()
+    # if value < 0.5:
+    #   value += 1
+    # M = cv2.getRotationMatrix2D((cols / 2, rows / 2), 0, value)
+    # res = cv2.warpAffine(img, M, (cols, rows))
       
     # if np.random.rand() >= 0.5:
     # rotacao
@@ -149,13 +177,16 @@ class Model():
 
     self.ac_batch = tf.reduce_sum(tf.cast(tf.equal(self.prediction, self.label), tf.float32))
 
-def train(train_data, train_labels, validation_data, validation_labels, model, num_epochs=200, augmentation=True):
+def train(train_data, train_labels, validation_data, validation_labels, model, num_epochs=200, augmentation=False):
   sess = tf.Session()
   sess.run(tf.global_variables_initializer())
 
-  batch_size = 8
+  batch_size = 10
   learning_rate = 5e-4
   num_steps = len(train_data) / batch_size
+
+  print('len(train_data)', len(train_data))
+  print('num_steps', num_steps)
 
   saver = tf.train.Saver(save_relative_paths=True)
   
@@ -187,11 +218,11 @@ def train(train_data, train_labels, validation_data, validation_labels, model, n
       ac_epoch += ac_batch
 
 
-      if cont % 100 == 0:
+      if cont % 100 == 0 or cont == 949:
         feed_dict_validation = {model.x: validation_data, model.y: validation_labels}
         loss_validation, ac_validation = sess.run([model.loss, model.ac_batch], feed_dict=feed_dict_validation)
         ac_validation /= len(validation_data)
-        print('step[', cont, '/', num_steps, ']', ac_validation)
+        print('step[', cont, '/', int(num_steps), ']', ac_validation)
 
         best_now = max(best_now, ac_validation)
         if ac_validation > best:
@@ -216,20 +247,23 @@ def main():
   image_h, image_w, num_channels = data[0].shape
 
   if need_shuffle:
-    data, labels, names = shuffle(data, labels, names)
+    data, labels, names = shuffle(data, labels, names=names)
 
-  if need_split:
-    train_percentage = 80
-    train_data, train_labels, \
-      validation_data, validation_labels, validation_names = split_dataset(data, labels, names, train_percentage)
-
-  else:
-    train_data = data
-    train_labels = labels
-    validation_data = np.array()
-    validation_labels = np.array()
+  train_percentage = 80
+  train_data, train_labels, \
+    validation_data, validation_labels, validation_names = split_dataset(data, labels, names, train_percentage)
 
   # print(num_pixels, num_channels)
+
+  test_data, test_labels, test_names = load_test_data('../data_part1/test', 'result_files/test/ensemble_test.txt')
+
+  test_data = reshape_data(test_data)
+
+  # print(train_data.shape, train_labels.shape)
+  # print(test_data.shape, test_labels.shape)
+
+  train_data = np.concatenate((train_data, test_data))
+  train_labels = np.concatenate((train_labels, test_labels))
 
   model = Model(image_h, image_w, num_channels, num_classes)
 
