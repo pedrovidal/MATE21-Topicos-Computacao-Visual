@@ -66,7 +66,7 @@ class Model():
 
     print('shape max_pool2', max_pool2.shape)
 
-    convt1 = tf.layers.conv2d_transpose(inputs=conv2, filters=16, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=tf.nn.relu)
+    convt1 = tf.layers.conv2d_transpose(inputs=max_pool2, filters=16, kernel_size=(5, 5), strides=(2, 2), padding='same', activation=tf.nn.relu)
     
     print('shape convt1', convt1.shape)
 
