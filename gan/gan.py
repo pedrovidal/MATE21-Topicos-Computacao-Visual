@@ -56,15 +56,15 @@ def gen_noise(data_size):
 
 def generator(inputs, reuse=False):
   with tf.variable_scope('generator', reuse=reuse):
-    c1 = tf.layers.conv2d_transpose(inputs=inputs, filters=256, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+    c1 = tf.layers.conv2d_transpose(inputs=inputs, filters=256, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.leaky_relu)
     # print(c1.shape)
-    c2 = tf.layers.conv2d_transpose(inputs=c1, filters=128, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+    c2 = tf.layers.conv2d_transpose(inputs=c1, filters=128, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.leaky_relu)
     # print(c2.shape)
-    c3 = tf.layers.conv2d_transpose(inputs=c2, filters=64, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=tf.nn.relu)
+    c3 = tf.layers.conv2d_transpose(inputs=c2, filters=64, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=tf.nn.leaky_relu)
     # print(c3.shape)
-    c4 = tf.layers.conv2d_transpose(inputs=c3, filters=32, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=tf.nn.relu)
-    c5 = tf.layers.conv2d_transpose(inputs=c4, filters=16, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=tf.nn.relu)
-    images = tf.layers.conv2d_transpose(inputs=c5, filters=1, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+    c4 = tf.layers.conv2d_transpose(inputs=c3, filters=32, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=tf.nn.leaky_relu)
+    c5 = tf.layers.conv2d_transpose(inputs=c4, filters=16, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=tf.nn.leaky_relu)
+    images = tf.layers.conv2d_transpose(inputs=c5, filters=1, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.sigmoid)
     # print(images.shape)
 
   return images
@@ -97,7 +97,7 @@ def discriminator(inputs, reuse=False):
     # print('shape max_pool5', mp5.shape)
 
 
-    c6 = tf.layers.conv2d(inputs=mp5, filters=1, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=tf.nn.relu)
+    c6 = tf.layers.conv2d(inputs=mp5, filters=1, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=None)
     # print('shape conv6', c6.shape)  
     mp6 = tf.layers.max_pooling2d(inputs=c6, pool_size=(2, 2), strides=(2, 2), padding='same')
     # print('shape max_pool6', mp6.shape)
@@ -112,6 +112,9 @@ class Model():
     self.gen_input = tf.placeholder(tf.float32, (None, 8, 8, 1))
     self.gen_output = generator(self.gen_input)
 
+    self.gen_output = tf.maximum(self.gen_output, 0)
+    self.gen_output = tf.minimum(self.gen_output, 1)
+
     self.disc_input = tf.placeholder(tf.float32, (None, 64, 64, 1))
 
     self.r_logits = discriminator(self.disc_input)
@@ -123,18 +126,18 @@ class Model():
     self.gen_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.f_logits, labels=tf.ones_like(self.f_logits)))
     self.disc_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.r_logits, labels=tf.ones_like(self.r_logits)) + tf.nn.sigmoid_cross_entropy_with_logits(logits=self.f_logits, labels=tf.zeros_like(self.f_logits)))
 
-    self.gen_train_opt = tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate_gen).minimize(self.gen_loss, var_list=gen_vars)
+    self.gen_train_opt = tf.train.AdamOptimizer(learning_rate=self.learning_rate_gen).minimize(self.gen_loss, var_list=gen_vars)
     # self.gen_train_opt = tf.train.AdamOptimizer(learning_rate=self.learning_rate_gen).minimize(self.gen_loss, var_list=gen_vars)
-    self.disc_train_opt = tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate_disc).minimize(self.disc_loss, var_list=disc_vars)
+    self.disc_train_opt = tf.train.AdamOptimizer(learning_rate=self.learning_rate_disc).minimize(self.disc_loss, var_list=disc_vars)
     # self.disc_train_opt = tf.train.AdamOptimizer(learning_rate=self.learning_rate_disc).minimize(self.disc_loss, var_list=disc_vars)
 
 def train(train_data, validation_data, model, num_epochs=200):
   sess = tf.Session()
   sess.run(tf.global_variables_initializer())
 
-  batch_size = 8
-  learning_rate_gen = 5e-3
-  learning_rate_disc = 5e-3
+  batch_size = 16
+  learning_rate_gen = 1e-4
+  learning_rate_disc = 1e-5
   num_steps = len(train_data) / batch_size
 
   saver = tf.train.Saver(save_relative_paths=True)
@@ -151,7 +154,7 @@ def train(train_data, validation_data, model, num_epochs=200):
     
     for cont, i in enumerate(range(0, len(train_data), batch_size // 2)):
 
-      gen_input = gen_noise(batch_size // 2)  
+      gen_input = gen_noise(batch_size // 2)
       disc_input = np.array(train_data[i : i + batch_size // 2])
 
       feed_dict = {model.gen_input: gen_input, model.disc_input: disc_input, model.learning_rate_gen: learning_rate_gen, model.learning_rate_disc: learning_rate_disc}
@@ -167,7 +170,7 @@ def train(train_data, validation_data, model, num_epochs=200):
         output = gen_images[ind] * 255
 
         cv2.imwrite('teste/output' + str(ep) + '_' + str(i) + '.png', output)
-    
+
 
 def main():
   need_shuffle = True
