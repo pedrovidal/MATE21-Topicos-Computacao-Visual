@@ -14,7 +14,7 @@ def load_data(path, num_classes):
     for file_name in sorted(os.listdir(os.path.join(path, dirs))):
       img_path = os.path.join(path, dirs, file_name)
       img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
-      img = cv2.resize(img, (64, 64))
+      img = cv2.resize(img, (16, 16))
       data.append(img)
       # one_hot_label = np.zeros(num_classes)
       # one_hot_label[int(dirs)] = 1
@@ -56,53 +56,32 @@ def gen_noise(data_size):
 
 def generator(inputs, reuse=False):
   with tf.variable_scope('generator', reuse=reuse):
-    c1 = tf.layers.conv2d_transpose(inputs=inputs, filters=256, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.leaky_relu)
-    # print(c1.shape)
-    c2 = tf.layers.conv2d_transpose(inputs=c1, filters=128, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.leaky_relu)
-    # print(c2.shape)
-    c3 = tf.layers.conv2d_transpose(inputs=c2, filters=64, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=tf.nn.leaky_relu)
-    # print(c3.shape)
-    c4 = tf.layers.conv2d_transpose(inputs=c3, filters=32, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=tf.nn.leaky_relu)
-    c5 = tf.layers.conv2d_transpose(inputs=c4, filters=16, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=tf.nn.leaky_relu)
-    images = tf.layers.conv2d_transpose(inputs=c5, filters=1, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.sigmoid)
-    # print(images.shape)
-
+    fc = tf.layers.dense(inputs, 64, activation=tf.nn.relu)
+    c1 = tf.layers.conv2d_transpose(inputs=fc, filters=256, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+    print(c1.shape)
+    images = tf.layers.conv2d(inputs=c1, filters=1, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=None)
+    print(images.shape)
+    
   return images
 
 def discriminator(inputs, reuse=False):
   with tf.variable_scope('discriminator', reuse=reuse):
     c1 = tf.layers.conv2d(inputs=inputs, filters=32, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=tf.nn.relu)
-    # print('shape conv1', c1.shape)
-    mp1 = tf.layers.max_pooling2d(inputs=c1, pool_size=(2, 2), strides=(2, 2), padding='same')
-    # print('shape max_pool1', mp1.shape)
+    print('shape conv1', c1.shape)
+    mp1 = tf.layers.max_pooling2d(inputs=c1, pool_size=(2, 2), strides=(3, 3), padding='same')
+    print('shape max_pool1', mp1.shape)
     
-    c2 = tf.layers.conv2d(inputs=mp1, filters=16, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=tf.nn.relu)
-    # print('shape conv2', c2.shape)  
-    mp2 = tf.layers.max_pooling2d(inputs=c2, pool_size=(2, 2), strides=(2, 2), padding='same')
-    # print('shape max_pool2', mp2.shape)
+    c2 = tf.layers.conv2d(inputs=mp1, filters=64, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=tf.nn.relu)
+    print('shape conv2', c2.shape)  
+    mp2 = tf.layers.max_pooling2d(inputs=c2, pool_size=(2, 2), strides=(3, 3), padding='same')
+    print('shape max_pool2', mp2.shape)
     
-    c3 = tf.layers.conv2d(inputs=mp2, filters=8, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=tf.nn.relu)
-    # print('shape conv3', c3.shape)  
-    mp3 = tf.layers.max_pooling2d(inputs=c3, pool_size=(2, 2), strides=(2, 2), padding='same')
-    # print('shape max_pool3', mp3.shape)
+    c3 = tf.layers.conv2d(inputs=mp2, filters=1, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=tf.nn.relu)
+    print('shape conv3', c3.shape)  
+    mp3 = tf.layers.max_pooling2d(inputs=c3, pool_size=(2, 2), strides=(3, 3), padding='same')
+    print('shape max_pool3', mp3.shape)
 
-    c4 = tf.layers.conv2d(inputs=mp3, filters=4, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=tf.nn.relu)
-    # print('shape conv4', c4.shape)  
-    mp4 = tf.layers.max_pooling2d(inputs=c4, pool_size=(2, 2), strides=(2, 2), padding='same')
-    # print('shape max_pool4', mp4.shape)
-
-    c5 = tf.layers.conv2d(inputs=mp4, filters=2, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=tf.nn.relu)
-    # print('shape conv5', c5.shape)  
-    mp5 = tf.layers.max_pooling2d(inputs=c5, pool_size=(2, 2), strides=(2, 2), padding='same')
-    # print('shape max_pool5', mp5.shape)
-
-
-    c6 = tf.layers.conv2d(inputs=mp5, filters=1, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=None)
-    # print('shape conv6', c6.shape)  
-    mp6 = tf.layers.max_pooling2d(inputs=c6, pool_size=(2, 2), strides=(2, 2), padding='same')
-    # print('shape max_pool6', mp6.shape)
-
-  return mp6
+  return mp3
 
 class Model():
   def __init__(self):
@@ -115,7 +94,7 @@ class Model():
     self.gen_output = tf.maximum(self.gen_output, 0)
     self.gen_output = tf.minimum(self.gen_output, 1)
 
-    self.disc_input = tf.placeholder(tf.float32, (None, 64, 64, 1))
+    self.disc_input = tf.placeholder(tf.float32, (None, 16, 16, 1))
 
     self.r_logits = discriminator(self.disc_input)
     self.f_logits = discriminator(self.gen_output, reuse=True)
@@ -136,8 +115,8 @@ def train(train_data, validation_data, model, num_epochs=200):
   sess.run(tf.global_variables_initializer())
 
   batch_size = 16
-  learning_rate_gen = 1e-4
-  learning_rate_disc = 1e-5
+  learning_rate_gen = 2e-4
+  learning_rate_disc = 5e-5
   num_steps = len(train_data) / batch_size
 
   saver = tf.train.Saver(save_relative_paths=True)
@@ -163,13 +142,13 @@ def train(train_data, validation_data, model, num_epochs=200):
       gen_loss_batch, gen_images, _ = sess.run([model.gen_loss, model.gen_output, model.gen_train_opt], feed_dict=feed_dict)
 
       if cont % 100 == 0:
-        print('step[', cont, '/', num_steps * 2, ']', 'loss gen =', gen_loss_batch, 'loss dic =', disc_loss_batch)
+        print('step[', cont, '/', num_steps * 2, ']', 'loss gen =', gen_loss_batch, 'loss disc =', disc_loss_batch)
         
         ind = np.random.randint(len(gen_images))
+        for j, output in enumerate(gen_images):
+          output *= 255
 
-        output = gen_images[ind] * 255
-
-        cv2.imwrite('teste/output' + str(ep) + '_' + str(i) + '.png', output)
+          cv2.imwrite('teste/output' + str(ep) + '_' + str(j) + '.png', output)
 
 
 def main():
