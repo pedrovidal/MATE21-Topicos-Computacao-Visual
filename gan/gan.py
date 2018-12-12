@@ -47,45 +47,45 @@ def reshape_data(data):
   return data.reshape(np.shape(data)[0], np.shape(data)[1], np.shape(data)[2], 1)
 
 def gen_noise(data_size):
-  vet = []
-
-  for i in range(data_size):
-    aux = np.random.normal(size=64)
-    aux = np.reshape(aux, (8, 8, 1))
-    vet.append(aux)
-  
-  vet = np.array(vet)
+  vet = np.random.randn(data_size, 64, 1)
   return vet
-
+  
 def generator(inputs, image_h, image_w, reuse=False):
   with tf.variable_scope('generator', reuse=reuse):
-    fc = tf.layers.dense(inputs, 64, activation=tf.nn.relu)
-    # fc = tf.layers.dense(fc, 128, activation=tf.nn.relu)
-    conv = tf.layers.conv2d_transpose(inputs=fc, filters=128, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
-    # print(conv.shape)
-    images = tf.layers.conv2d(inputs=conv, filters=1, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=None)
-    # print(images.shape)
+    print(inputs.shape)
 
-    images = tf.image.resize_images(images, (image_h, image_w))
+    fc = tf.layers.dense(inputs, 256, activation=tf.nn.relu)
+    print(fc.shape)
+
+    fc = tf.reshape(fc, (-1, 16, 16, 1))
+    print(fc.shape)
+
+    conv = tf.layers.conv2d_transpose(inputs=fc, filters=128, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+    print(conv.shape)
+
+    images = tf.layers.conv2d_transpose(inputs=conv, filters=1, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=None)
+    print(images.shape)
+
+    # images = tf.image.resize_images(images, (image_h, image_w))
     
   return images
 
 def discriminator(inputs, reuse=False):
   with tf.variable_scope('discriminator', reuse=reuse):
-    net = tf.layers.conv2d(inputs=inputs, filters=4, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=tf.nn.relu)
+    net = tf.layers.conv2d(inputs=inputs, filters=128, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
     print('shape conv1', net.shape)
-    net = tf.layers.max_pooling2d(inputs=net, pool_size=(2, 2), strides=(3, 3), padding='same')
+    net = tf.layers.max_pooling2d(inputs=net, pool_size=(3, 3), strides=(2, 2), padding='same')
     print('shape max_pool1', net.shape)
     
-    net = tf.layers.conv2d(inputs=net, filters=4, kernel_size=(5, 5), strides=(1, 1), padding='same', activation=tf.nn.relu)
+    net = tf.layers.conv2d(inputs=net, filters=256, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
     print('shape conv2', net.shape)  
-    net = tf.layers.max_pooling2d(inputs=net, pool_size=(2, 2), strides=(3, 3), padding='same')
+    net = tf.layers.max_pooling2d(inputs=net, pool_size=(3, 3), strides=(2, 2), padding='same')
     print('shape max_pool2', net.shape)
 
     # NAO MUDAR ULTIMA CAMADA
-    net = tf.layers.conv2d(inputs=net, filters=1, kernel_size=(1, 1), strides=(1, 1), padding='same', activation=None)
+    net = tf.layers.conv2d(inputs=net, filters=1, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=None)
     print('shape final conv', net.shape)  
-    net = tf.layers.max_pooling2d(inputs=net, pool_size=(2, 2), strides=(2, 2), padding='same')
+    net = tf.layers.max_pooling2d(inputs=net, pool_size=(3, 3), strides=(2, 2), padding='same')
     print('shape final max_pool', net.shape)
     # NAO MUDAR ULTIMA CAMADA
 
@@ -96,7 +96,7 @@ class Model():
     self.learning_rate_gen = tf.placeholder(tf.float32)
     self.learning_rate_disc = tf.placeholder(tf.float32)
 
-    self.gen_input = tf.placeholder(tf.float32, (None, 8, 8, 1))
+    self.gen_input = tf.placeholder(tf.float32, (None, 64, 1))
     self.gen_output = generator(self.gen_input, image_h, image_w)
 
     self.gen_output = tf.maximum(self.gen_output, 0)
@@ -111,7 +111,7 @@ class Model():
     disc_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="discriminator")
 
     self.gen_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.f_logits, labels=tf.ones_like(self.f_logits)))
-    self.disc_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.r_logits, labels=tf.ones_like(self.r_logits)) + tf.nn.sigmoid_cross_entropy_with_logits(logits=self.f_logits, labels=tf.zeros_like(self.f_logits)))
+    self.disc_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.r_logits, labels=tf.ones_like(self.r_logits))) + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.f_logits, labels=tf.zeros_like(self.f_logits)))
 
     # self.gen_train_opt = tf.train.AdamOptimizer(learning_rate=self.learning_rate_gen).minimize(self.gen_loss, var_list=gen_vars)
     self.gen_train_opt = tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate_gen).minimize(self.gen_loss, var_list=gen_vars)
@@ -122,7 +122,7 @@ def train(train_data, validation_data, model, num_epochs=1000):
   sess = tf.Session()
   sess.run(tf.global_variables_initializer())
 
-  batch_size = 8
+  batch_size = 16
   # learning_rate_gen = 4e-5
   learning_rate_gen = 1e-3
   # learning_rate_disc = 5e-5
@@ -150,25 +150,26 @@ def train(train_data, validation_data, model, num_epochs=1000):
 
       disc_loss_batch, _ = sess.run([model.disc_loss, model.disc_train_opt], feed_dict=feed_dict)
 
+      gen_input = gen_noise(batch_size)
+      feed_dict = {model.gen_input: gen_input, model.learning_rate_gen: learning_rate_gen}
+
       gen_loss_batch, gen_images, _ = sess.run([model.gen_loss, model.gen_output, model.gen_train_opt], feed_dict=feed_dict)
 
 
-      if cont % 50 == 0:
+      if cont % 10 == 0:
         print('step[', cont, '/', num_steps * 2, ']', 'loss gen =', gen_loss_batch, 'loss disc =', disc_loss_batch)
-        
-        ind = np.random.randint(len(gen_images))
-        
-        output = gen_images[ind] * 255
+        print(len(gen_images))
+        # for ind in range(len(gen_images)):
+        #   output = gen_images[ind] * 255
 
-        output = cv2.resize(output, (64, 64))
-        cv2.imwrite('teste/output' + str(ep) + '_' + str(ind) + '.png', output)
+        #   cv2.imwrite('teste/output' + str(ep) + '_' + str(ind) + '.png', output)
 
 
 def main():
   need_shuffle = True
   need_split = True
 
-  image_w, image_h = (16, 16)
+  image_w, image_h = (64, 64)
 
   num_classes = 10
 
