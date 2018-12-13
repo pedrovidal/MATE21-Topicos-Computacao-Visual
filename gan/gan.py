@@ -20,8 +20,8 @@ def load_data(path, num_classes, image_w, image_h):
       data.append(img)
       # one_hot_label = np.zeros(num_classes)
       # one_hot_label[int(dirs)] = 1
-    if int(dirs) == 3:
-      break
+    # if int(dirs) == 3:
+    #   break
 
   data = np.array(data, dtype=np.float)
   data /= 255.0
@@ -60,6 +60,7 @@ def generator(net, image_h, image_w, reuse=False):
     # net = tf.layers.dense(net, 64, activation=tf.nn.relu)
 
     net = tf.layers.dense(net, 128, activation=tf.nn.relu)
+    # net = tf.layers.dense(net, 256, activation=tf.nn.relu)
 
     net = tf.layers.dense(net, 256, activation=tf.nn.sigmoid)
     print(net.shape)
@@ -87,7 +88,7 @@ def discriminator(net, reuse=False):
 
   	net = tf.reshape(net, (-1, 256))
 
-  	net = tf.layers.dense(net, 64, activation=tf.nn.relu)
+  	net = tf.layers.dense(net, 256, activation=tf.nn.relu)
   	
   	net = tf.layers.dense(net, 1, activation=None)
 
@@ -141,7 +142,7 @@ def train(train_data, validation_data, model, num_epochs=10000):
   sess = tf.Session()
   sess.run(tf.global_variables_initializer())
 
-  batch_size = 16
+  batch_size = 128
   # learning_rate_gen = 4e-5
   learning_rate_gen = 5e-4
   # learning_rate_disc = 5e-5
@@ -151,6 +152,8 @@ def train(train_data, validation_data, model, num_epochs=10000):
   saver = tf.train.Saver(save_relative_paths=True)
 
   best = 1123456789
+
+  validation_noise = gen_noise(10)
 
   for ep in range(num_epochs):
     print('Epoca', ep)
@@ -174,11 +177,23 @@ def train(train_data, validation_data, model, num_epochs=10000):
 
       gen_loss_batch, gen_images, _ = sess.run([model.gen_loss, model.gen_output, model.gen_train_opt], feed_dict=feed_dict)
 
-      if cont % 100 == 0:
-        print('step[', cont, '/', num_steps * 2, ']', 'loss gen =', gen_loss_batch, 'loss disc =', disc_loss_batch)
-        output = gen_images[0] * 255
+      if cont == ((num_steps * 2) - 1):
+       print('step[', cont, '/', num_steps * 2, ']', 'loss gen =', gen_loss_batch, 'loss disc =', disc_loss_batch)
+       
+      
+      if ep % 100 == 0:
+        for i in range(10):
+          output = gen_images[i] * 255
+          output = cv2.resize(output, (64, 64))
+          cv2.imwrite('teste/output' + str(ep) + '_' + str(i) + '.png', output)
 
-        cv2.imwrite('teste/output' + str(ep) + '_' + str(0) + '.png', output)
+        feed_dict = {model.gen_input: validation_noise, model.learning_rate_gen: learning_rate_gen}
+        gen_loss_validation, gen_images_validation, _ = sess.run([model.gen_loss, model.gen_output, model.gen_train_opt], feed_dict=feed_dict)
+
+        for  i in range(len(gen_images_validation)):
+          output = gen_images_validation[i] * 255
+          output = cv2.resize(output, (64, 64))
+          cv2.imwrite('teste/validation/output' + str(ep) + '_' + str(i) + '.png', output)
 
 
 def main():
