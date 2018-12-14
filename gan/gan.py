@@ -193,11 +193,13 @@ def train(train_data, validation_data, model, num_epochs=10000):
           output = cv2.resize(output, (64, 64), interpolation=cv2.INTER_CUBIC)
           cv2.imwrite('teste/output' + str(ep) + '_' + str(i) + '.png', output)
 
-        feed_dict = {model.gen_input: validation_noise, model.learning_rate_gen: learning_rate_gen}
-        gen_loss_validation, gen_images_validation, _ = sess.run([model.gen_loss, model.gen_output, model.gen_train_opt], feed_dict=feed_dict)
+        feed_dict = {model.gen_input: validation_noise}
+        gen_images_validation = sess.run([model.gen_output], feed_dict=feed_dict)
 
-        for i in range(len(gen_images_validation)):
-          output = gen_images_validation[i] * 255
+        # print(gen_images_validation[0].shape[0])
+
+        for i in range(gen_images_validation[0].shape[0]):
+          output = gen_images_validation[0][i] * 255
           output = cv2.resize(output, (64, 64), interpolation=cv2.INTER_CUBIC)
           cv2.imwrite('teste/validation/output' + str(ep) + '_' + str(i) + '.png', output)
 
