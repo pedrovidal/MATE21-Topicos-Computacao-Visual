@@ -60,12 +60,15 @@ def generator(net, image_h, image_w, reuse=False):
     # net = tf.layers.dense(net, 64, activation=tf.nn.relu)
 
     net = tf.layers.dense(net, 128, activation=tf.nn.relu)
+    
     # net = tf.layers.dense(net, 256, activation=tf.nn.relu)
+    
+    # net = tf.layers.dense(net, 512, activation=tf.nn.relu)
 
-    net = tf.layers.dense(net, 256, activation=tf.nn.sigmoid)
+    net = tf.layers.dense(net, 1024, activation=tf.nn.sigmoid)
     print(net.shape)
 
-    net = tf.reshape(net, (-1, 16, 16, 1))
+    net = tf.reshape(net, (-1, 32, 32, 1))
     print(net.shape)
 
     # net = tf.layers.conv2d(inputs=net, filters = 16, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=tf.nn.relu)
@@ -84,13 +87,15 @@ def generator(net, image_h, image_w, reuse=False):
 
 def discriminator(net, reuse=False):
   with tf.variable_scope('discriminator', reuse=reuse):
-  	print(net.shape)
+    # print('disc:')
 
-  	net = tf.reshape(net, (-1, 256))
+    net = tf.reshape(net, (-1, 1024))
 
-  	net = tf.layers.dense(net, 256, activation=tf.nn.relu)
-  	
-  	net = tf.layers.dense(net, 1, activation=None)
+    net = tf.layers.dense(net, 64, activation=tf.nn.relu)
+    
+    # net = tf.layers.dense(net, 32, activation=tf.nn.relu)
+    
+    net = tf.layers.dense(net, 1, activation=None)
 
     # net = tf.layers.conv2d(inputs=net, filters=128, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
     # print('shape conv1', net.shape)
@@ -149,14 +154,15 @@ def train(train_data, validation_data, model, num_epochs=10000):
   learning_rate_disc = 5e-5
   num_steps = len(train_data) / batch_size
 
-  saver = tf.train.Saver(save_relative_paths=True)
+  gen_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="generator")
+  saver = tf.train.Saver(var_list=gen_vars, save_relative_paths=True)
 
   best = 1123456789
 
-  validation_noise = gen_noise(10)
+  validation_noise = gen_noise(11)
 
-  for ep in range(num_epochs):
-    print('Epoca', ep)
+  for ep in range(num_epochs + 1):
+    # print('Epoca', ep)
     
     best_now = 0
     loss_epoch = 0
@@ -178,29 +184,33 @@ def train(train_data, validation_data, model, num_epochs=10000):
       gen_loss_batch, gen_images, _ = sess.run([model.gen_loss, model.gen_output, model.gen_train_opt], feed_dict=feed_dict)
 
       if cont == ((num_steps * 2) - 1):
-       print('step[', cont, '/', num_steps * 2, ']', 'loss gen =', gen_loss_batch, 'loss disc =', disc_loss_batch)
+       print('epoca', ep, 'loss gen =', gen_loss_batch, 'loss disc =', disc_loss_batch)
        
       
-      if ep % 100 == 0:
+      if ep % 25 == 0 and cont == ((num_steps * 2) - 1):
         for i in range(10):
           output = gen_images[i] * 255
-          output = cv2.resize(output, (64, 64))
+          output = cv2.resize(output, (64, 64), interpolation=cv2.INTER_CUBIC)
           cv2.imwrite('teste/output' + str(ep) + '_' + str(i) + '.png', output)
 
         feed_dict = {model.gen_input: validation_noise, model.learning_rate_gen: learning_rate_gen}
         gen_loss_validation, gen_images_validation, _ = sess.run([model.gen_loss, model.gen_output, model.gen_train_opt], feed_dict=feed_dict)
 
-        for  i in range(len(gen_images_validation)):
+        for i in range(len(gen_images_validation)):
           output = gen_images_validation[i] * 255
-          output = cv2.resize(output, (64, 64))
+          output = cv2.resize(output, (64, 64), interpolation=cv2.INTER_CUBIC)
           cv2.imwrite('teste/validation/output' + str(ep) + '_' + str(i) + '.png', output)
+
+      if ep % 100 == 0:
+        # gen_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="generator")
+        saver.save(sess, './model/gan_generator')
 
 
 def main():
   need_shuffle = True
   need_split = True
 
-  image_w, image_h = (16, 16)
+  image_w, image_h = (32, 32)
 
   num_classes = 10
 
