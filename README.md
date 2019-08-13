@@ -1,1 +1,1 @@
-# mate21
+Atividades da matéria de tópicos em computação visual.
